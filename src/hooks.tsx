@@ -15,21 +15,21 @@ const ApiContext = createContext<ApiContextData<GenericModelFactoryMap> | null>(
   null
 );
 
-type MyProviderProps<Models extends GenericModelFactoryMap> = {
+type ApiProviderProps<Models extends GenericModelFactoryMap> = {
   models: Models;
   baseUrl: string;
   client?: QueryClient;
 };
 
-export function ApiProvider<Models extends GenericModelFactoryMap>({
+export function ApiProvider({
   client = new QueryClient(),
   baseUrl,
   models,
   children,
-}: PropsWithChildren<MyProviderProps<GenericModelFactoryMap>>) {
+}: PropsWithChildren<ApiProviderProps<GenericModelFactoryMap>>) {
   const api = createApi({
     client,
-    models: models as Models,
+    models,
     baseUrl,
   });
   return (

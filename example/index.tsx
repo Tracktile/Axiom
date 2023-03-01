@@ -6,7 +6,7 @@ import { User } from "./models/user";
 const api = createApi({
   client: new QueryClient(),
   models: {
-    user: User,
+    User,
   },
   baseUrl: "https://jsonplaceholder.typicode.com/User",
 });

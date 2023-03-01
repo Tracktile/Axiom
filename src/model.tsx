@@ -24,7 +24,6 @@ import {
 export type ModelId = string | number;
 
 export type ModelFactory<T extends TSchema> = (client: QueryClient) => Model<T>;
-
 export type Model<TModel extends TSchema, Schema = Static<TModel>> = {
   schema: Schema;
   create: (
@@ -55,8 +54,8 @@ export function createApiModel<TModel extends TSchema>({
   resource,
   schema,
   idKey = "id",
-}: CreateApiModelOptions<TModel>): ModelFactory<TModel> {
-  return (client: QueryClient): Model<TModel> => {
+}: CreateApiModelOptions<TModel>): ModelFactory<TModel> & { schema: TModel } {
+  const factoryFn = (client: QueryClient): Model<TModel> => {
     const modelKeys = {
       search: (params?: ApiPaginationParams) => [
         name,
@@ -119,4 +118,6 @@ export function createApiModel<TModel extends TSchema>({
 
     return model;
   };
+
+  return Object.assign(factoryFn, { schema });
 }
