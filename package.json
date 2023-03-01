@@ -1,0 +1,25 @@
+{
+  "name": "@tracktile/axiom",
+  "version": "0.0.1",
+  "main": "dist/index.js",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc"
+  },
+  "files": [
+    "dist/"
+  ],
+  "devDependencies": {
+    "@types/qs": "^6.9.7",
+    "@types/react": "^18.0.28",
+    "ts-node": "^10.9.1",
+    "typescript": "^4.8.4"
+  },
+  "dependencies": {
+    "@sinclair/typebox": "^0.25.24",
+    "@tanstack/react-query": "^4.24.10",
+    "qs": "^6.11.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  }
+}
