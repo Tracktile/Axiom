@@ -15,11 +15,21 @@ export type ModelMap<
   [K in keyof M]: Model<S>;
 };
 
+interface CreateApiOptions<
+  M extends ModelFactoryMap<T, S>,
+  T extends ModelFactory<S>,
+  S extends TSchema
+> {
+  client: QueryClient;
+  models: M;
+  baseUrl: string;
+}
+
 export function createApi<
   M extends ModelFactoryMap<T, S>,
   T extends ModelFactory<S>,
   S extends TSchema
->(client: QueryClient, models: M): ModelMap<M, T, S> {
+>({ client, baseUrl, models }: CreateApiOptions<M, T, S>): ModelMap<M, T, S> {
   return Object.keys(models).reduce(
     (acc, key) => ({
       ...acc,

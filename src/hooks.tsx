@@ -1,16 +1,50 @@
-import { useQueryClient } from "@tanstack/react-query";
-import { createApiModel } from "./model";
+import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
+import React, { createContext, useContext, PropsWithChildren } from "react";
+import { TSchema } from "@sinclair/typebox";
 
-type Model = ReturnType<typeof createApiModel>;
-type BoundModelMap = Record<string, ReturnType<Model>>;
+import { createApi, ModelFactoryMap } from "./api";
+import { ModelFactory } from "./model";
 
-export const useApi = (
-  Models: Record<string, ReturnType<typeof createApiModel>>
-) => {
-  const queryClient = useQueryClient();
-  const api = Object.entries(Models).reduce(
-    (acc, [name, model]) => ({ ...acc, [name]: model(queryClient) }),
-    {} as BoundModelMap
-  );
-  return api;
+type GenericModelFactoryMap = ModelFactoryMap<ModelFactory<TSchema>, TSchema>;
+
+type ApiContextData<Models extends GenericModelFactoryMap> = {
+  api: Models;
 };
+
+const ApiContext = createContext<ApiContextData<GenericModelFactoryMap> | null>(
+  null
+);
+
+type MyProviderProps<Models extends GenericModelFactoryMap> = {
+  models: Models;
+  baseUrl: string;
+  client?: QueryClient;
+};
+
+export function ApiProvider<Models extends GenericModelFactoryMap>({
+  client = new QueryClient(),
+  baseUrl,
+  models,
+  children,
+}: PropsWithChildren<MyProviderProps<GenericModelFactoryMap>>) {
+  const api = createApi({
+    client,
+    models: models as Models,
+    baseUrl,
+  });
+  return (
+    <QueryClientProvider client={client}>
+      <ApiContext.Provider value={{ api }}>{children}</ApiContext.Provider>;
+    </QueryClientProvider>
+  );
+}
+
+export function useApi<Models extends GenericModelFactoryMap>() {
+  const context = useContext<ApiContextData<Models>>(
+    ApiContext as unknown as React.Context<ApiContextData<Models>>
+  );
+  if (!context) {
+    throw new Error("useMyContext must be used under MyContextProvider");
+  }
+  return context;
+}
