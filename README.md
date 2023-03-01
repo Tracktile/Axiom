@@ -1,3 +1,7 @@
+ <p  align="center">
+  <img  src="https://i.imgur.com/w98C6Oy.png"  />
+</p>
+ 
  <p  align="center">A very opinionated API client with built in caching, offline storage, validation, and more. Powered internally by @tanstack/react-query</p>
 
 ## Features
