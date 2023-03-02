@@ -34,6 +34,14 @@ export function ApiProvider<M extends Record<string, ModelFactory<any>>>({
   );
 }
 
+export function createApiProvider<
+  M extends Record<string, ModelFactory<any>>
+>() {
+  return function ApiProviderHook(props: ApiProviderProps<M>) {
+    return <ApiProvider {...props} />;
+  };
+}
+
 function useApi<M extends Record<string, ModelFactory<any>>>() {
   const context = useContext<ApiContextData<M> | null>(
     ApiContext as unknown as React.Context<ApiContextData<M> | null>
