@@ -2,25 +2,27 @@ import React from "react";
 import { QueryClient } from "@tanstack/react-query";
 
 import { User } from "./models/user";
-import { ApiProvider, createApi, useApi } from "../src";
+import { ApiProvider, createApi, createUseApiHook } from "../src";
 
-// const models = { User };
+const models = { User };
 
-// function Users() {
-//   const api = useApi<typeof models>();
-//   const { data: users, isLoading } = api.User.search();
-//   return null;
-// }
+const useApi = createUseApiHook<typeof models>(models);
 
-// function App() {
-//   return (
-//     <ApiProvider models={models} baseUrl="">
-//       <Users />
-//     </ApiProvider>
-//   );
-// }
+function Users() {
+  const api = useApi();
+  const { data: users, isLoading } = api.User.search();
+  return null;
+}
 
-// export default App;
+function App() {
+  return (
+    <ApiProvider models={models} baseUrl="">
+      <Users />
+    </ApiProvider>
+  );
+}
+
+export default App;
 
 const direct = createApi({
   client: new QueryClient(),

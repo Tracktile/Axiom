@@ -7,30 +7,11 @@ export type ModelFactoryMap<T extends ModelFactory<S>, S extends TSchema> = {
   [K in keyof T]: ModelFactory<S>;
 };
 
-// export type UnwrapModelFactories<T> = T extends ModelFactoryMap<
-//   infer S,
-//   infer U
-// >
-//   ? ModelFactory<U>
-//   : never;
-
-// export type UnwrapFactorySchemas<T> = T extends ModelFactory<infer S>
-//   ? S
-//   : never;
-
-export type ModelMap<
-  M extends ModelFactoryMap<T, S>,
-  T extends ModelFactory<S>,
-  S extends TSchema
-> = {
-  [K in keyof M]: Model<S>;
+export type ModelMap<M extends Record<string, ModelFactory<any>>> = {
+  [K in keyof M]: ReturnType<M[K]>;
 };
 
-export function createApi<
-  M extends ModelFactoryMap<T, S>,
-  T extends ModelFactory<S>,
-  S extends TSchema
->({
+export function createApi<M extends Record<string, ModelFactory<any>>>({
   client,
   baseUrl,
   models,
@@ -38,12 +19,12 @@ export function createApi<
   client: QueryClient;
   models: M;
   baseUrl: string;
-}): ModelMap<M, T, S> {
+}): ModelMap<M> {
   return Object.keys(models).reduce(
     (acc, key) => ({
       ...acc,
-      [key as keyof M]: models[key as keyof M](client) as Model<S>,
+      [key as keyof M]: models[key as keyof M](client),
     }),
-    {} as ModelMap<M, T, S>
+    {} as ModelMap<M>
   );
 }

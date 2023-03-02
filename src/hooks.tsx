@@ -1,47 +1,28 @@
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import React, { createContext, useContext, PropsWithChildren } from "react";
-import { TSchema } from "@sinclair/typebox";
 
 import { ModelFactory } from "./model";
-import {
-  createApi,
-  ModelMap,
-  ModelFactoryMap,
-  UnwrapFactorySchemas,
-  UnwrapModelFactories,
-} from "./api";
+import { createApi, ModelMap } from "./api";
 
-type ApiContextData<
-  M extends ModelFactoryMap<T, S>,
-  T extends ModelFactory<S> = UnwrapModelFactories<M>,
-  S extends TSchema = UnwrapFactorySchemas<T>
-> = {
-  api: ModelMap<M, T, S>;
+type ApiContextData<M extends Record<string, ModelFactory<any>>> = {
+  api: ModelMap<M>;
 };
 
 const ApiContext = createContext<ApiContextData<{}> | null>(null);
 
-type ApiProviderProps<
-  M extends ModelFactoryMap<T, S>,
-  T extends ModelFactory<S> = UnwrapModelFactories<M>,
-  S extends TSchema = UnwrapFactorySchemas<T>
-> = {
+type ApiProviderProps<M extends Record<string, ModelFactory<any>>> = {
   models: M;
   baseUrl: string;
   client?: QueryClient;
 };
 
-export function ApiProvider<
-  M extends ModelFactoryMap<T, S>,
-  T extends ModelFactory<S> = UnwrapModelFactories<M>,
-  S extends TSchema = UnwrapFactorySchemas<T>
->({
+export function ApiProvider<M extends Record<string, ModelFactory<any>>>({
   client = new QueryClient(),
   baseUrl,
   models,
   children,
-}: PropsWithChildren<ApiProviderProps<M, T, S>>) {
-  const api = createApi<M, T, S>({
+}: PropsWithChildren<ApiProviderProps<M>>) {
+  const api = createApi<M>({
     client,
     models,
     baseUrl,
@@ -53,17 +34,21 @@ export function ApiProvider<
   );
 }
 
-export function useApi<
-  M extends ModelFactoryMap<T, S>,
-  T extends ModelFactory<S> = UnwrapModelFactories<M>,
-  S extends TSchema = UnwrapFactorySchemas<T>
->() {
-  const context = useContext<ApiContextData<M, T, S> | null>(
-    ApiContext as unknown as React.Context<ApiContextData<M, T, S> | null>
+function useApi<M extends Record<string, ModelFactory<any>>>() {
+  const context = useContext<ApiContextData<M> | null>(
+    ApiContext as unknown as React.Context<ApiContextData<M> | null>
   );
   if (!context) {
     throw new Error("useApiContext must be used under ApiContextProvider");
   }
 
   return context.api;
+}
+
+export function createUseApiHook<
+  M extends Record<string, ModelFactory<any>>
+>() {
+  return function useApiHook() {
+    return useApi<M>();
+  };
 }
