@@ -2,32 +2,46 @@ import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import React, { createContext, useContext, PropsWithChildren } from "react";
 import { TSchema } from "@sinclair/typebox";
 
-import { createApi, ModelFactoryMap } from "./api";
 import { ModelFactory } from "./model";
+import {
+  createApi,
+  ModelMap,
+  ModelFactoryMap,
+  UnwrapFactorySchemas,
+  UnwrapModelFactories,
+} from "./api";
 
-type GenericModelFactoryMap = ModelFactoryMap<ModelFactory<TSchema>, TSchema>;
-
-type ApiContextData<Models extends GenericModelFactoryMap> = {
-  api: Models;
+type ApiContextData<
+  M extends ModelFactoryMap<T, S>,
+  T extends ModelFactory<S> = UnwrapModelFactories<M>,
+  S extends TSchema = UnwrapFactorySchemas<T>
+> = {
+  api: ModelMap<M, T, S>;
 };
 
-const ApiContext = createContext<ApiContextData<GenericModelFactoryMap> | null>(
-  null
-);
+const ApiContext = createContext<ApiContextData<{}> | null>(null);
 
-type ApiProviderProps<Models extends GenericModelFactoryMap> = {
-  models: Models;
+type ApiProviderProps<
+  M extends ModelFactoryMap<T, S>,
+  T extends ModelFactory<S> = UnwrapModelFactories<M>,
+  S extends TSchema = UnwrapFactorySchemas<T>
+> = {
+  models: M;
   baseUrl: string;
   client?: QueryClient;
 };
 
-export function ApiProvider({
+export function ApiProvider<
+  M extends ModelFactoryMap<T, S>,
+  T extends ModelFactory<S> = UnwrapModelFactories<M>,
+  S extends TSchema = UnwrapFactorySchemas<T>
+>({
   client = new QueryClient(),
   baseUrl,
   models,
   children,
-}: PropsWithChildren<ApiProviderProps<GenericModelFactoryMap>>) {
-  const api = createApi({
+}: PropsWithChildren<ApiProviderProps<M, T, S>>) {
+  const api = createApi<M, T, S>({
     client,
     models,
     baseUrl,
@@ -39,12 +53,17 @@ export function ApiProvider({
   );
 }
 
-export function useApi<Models extends GenericModelFactoryMap>() {
-  const context = useContext<ApiContextData<Models>>(
-    ApiContext as unknown as React.Context<ApiContextData<Models>>
+export function useApi<
+  M extends ModelFactoryMap<T, S>,
+  T extends ModelFactory<S> = UnwrapModelFactories<M>,
+  S extends TSchema = UnwrapFactorySchemas<T>
+>() {
+  const context = useContext<ApiContextData<M, T, S> | null>(
+    ApiContext as unknown as React.Context<ApiContextData<M, T, S> | null>
   );
   if (!context) {
-    throw new Error("useMyContext must be used under MyContextProvider");
+    throw new Error("useApiContext must be used under ApiContextProvider");
   }
-  return context;
+
+  return context.api;
 }

@@ -24,23 +24,38 @@ import {
 export type ModelId = string | number;
 
 export type ModelFactory<T extends TSchema> = (client: QueryClient) => Model<T>;
-export type Model<TModel extends TSchema, Schema = Static<TModel>> = {
-  schema: Schema;
-  create: (
-    options?: MutationOptions<Schema, unknown, Schema, unknown> | undefined
-  ) => UseMutationResult<Schema, unknown, Schema, unknown>;
-  update: (
-    options?: MutationOptions<Schema, unknown, Schema, unknown> | undefined
-  ) => UseMutationResult<Schema, unknown, Schema, unknown>;
-  remove: () => UseMutationResult<Schema, unknown, Schema, unknown>;
-  get: (id: ModelId) => UseQueryResult<Schema, unknown>;
-  search: (params?: ApiPaginationParams) => UseQueryResult<Schema[], unknown>;
-  invalidateOne: (id: ModelId) => Promise<void>;
-  invalidateAll: () => Promise<void>;
-  read: (id: ModelId) => TModel | undefined;
-  readAll: () => TModel[] | undefined;
-  readOneFromAll: (id: ModelId) => TModel | undefined;
-};
+
+export class Model<TModel extends TSchema> {
+  schema!: TModel;
+  create!: (
+    options?:
+      | MutationOptions<Static<TModel>, unknown, Static<TModel>, unknown>
+      | undefined
+  ) => UseMutationResult<Static<TModel>, unknown, Static<TModel>, unknown>;
+  update!: (
+    options?:
+      | MutationOptions<Static<TModel>, unknown, Static<TModel>, unknown>
+      | undefined
+  ) => UseMutationResult<Static<TModel>, unknown, Static<TModel>, unknown>;
+  remove!: () => UseMutationResult<
+    Static<TModel>,
+    unknown,
+    Static<TModel>,
+    unknown
+  >;
+  get!: (id: ModelId) => UseQueryResult<Static<TModel>, unknown>;
+  search!: (
+    params?: ApiPaginationParams
+  ) => UseQueryResult<Static<TModel>[], unknown>;
+  invalidateOne!: (id: ModelId) => Promise<void>;
+  invalidateAll!: () => Promise<void>;
+  read!: (id: ModelId) => TModel | undefined;
+  readAll!: () => TModel[] | undefined;
+  readOneFromAll!: (id: ModelId) => TModel | undefined;
+  constructor(model: Model<TModel>) {
+    Object.assign(this, model);
+  }
+}
 
 interface CreateApiModelOptions<Schema extends TSchema> {
   name: string;
@@ -98,7 +113,7 @@ export function createApiModel<TModel extends TSchema>({
       return useQuery<Static<TModel>[]>(modelKeys.search(params), () => fn());
     };
 
-    const model: Model<TModel> = {
+    const model: Model<TModel> = new Model({
       schema: schema,
       create: createMutation,
       update: updateMutation,
@@ -114,7 +129,7 @@ export function createApiModel<TModel extends TSchema>({
         const all = client.getQueryData<TModel[]>(modelKeys.search()) ?? [];
         return all.find((item) => item.id === id);
       },
-    };
+    });
 
     return model;
   };

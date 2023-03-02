@@ -1,14 +1,34 @@
+import React from "react";
 import { QueryClient } from "@tanstack/react-query";
 
-import { createApi } from "../src/api";
 import { User } from "./models/user";
+import { ApiProvider, createApi, useApi } from "../src";
 
-const api = createApi({
+// const models = { User };
+
+// function Users() {
+//   const api = useApi<typeof models>();
+//   const { data: users, isLoading } = api.User.search();
+//   return null;
+// }
+
+// function App() {
+//   return (
+//     <ApiProvider models={models} baseUrl="">
+//       <Users />
+//     </ApiProvider>
+//   );
+// }
+
+// export default App;
+
+const direct = createApi({
   client: new QueryClient(),
-  models: {
-    User,
-  },
-  baseUrl: "https://jsonplaceholder.typicode.com/User",
+  baseUrl: "",
+  models: { User },
 });
 
-export default api;
+User.schema;
+direct.User.schema;
+
+const { data, isLoading } = direct.User.get(1);
