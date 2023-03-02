@@ -14,6 +14,7 @@ type ApiProviderProps<M extends Record<string, ModelFactory<any>>> = {
   models: M;
   baseUrl: string;
   client?: QueryClient;
+  getToken: () => Promise<string | undefined>;
 };
 
 export function ApiProvider<M extends Record<string, ModelFactory<any>>>({
@@ -21,11 +22,13 @@ export function ApiProvider<M extends Record<string, ModelFactory<any>>>({
   baseUrl,
   models,
   children,
+  getToken = async () => undefined,
 }: PropsWithChildren<ApiProviderProps<M>>) {
   const api = createApi<M>({
     client,
     models,
     baseUrl,
+    getToken,
   });
   return (
     <QueryClientProvider client={client}>
