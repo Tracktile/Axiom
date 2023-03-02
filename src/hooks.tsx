@@ -37,7 +37,9 @@ export function ApiProvider<M extends Record<string, ModelFactory<any>>>({
 export function createApiProvider<
   M extends Record<string, ModelFactory<any>>
 >() {
-  return function ApiProviderHook(props: ApiProviderProps<M>) {
+  return function ApiProviderHook(
+    props: PropsWithChildren<ApiProviderProps<M>>
+  ) {
     return <ApiProvider {...props} />;
   };
 }
