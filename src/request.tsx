@@ -15,6 +15,7 @@ export interface APIRequestParams<T> {
   headers?: Record<string, string>;
   query?: ApiPaginationParams;
   body?: T;
+  token?: string;
 }
 
 export async function request<TRequestBody, TResponseBody = TRequestBody>(
@@ -24,6 +25,7 @@ export async function request<TRequestBody, TResponseBody = TRequestBody>(
     headers = {},
     query = {},
     body,
+    token,
   }: APIRequestParams<TRequestBody> = {}
 ): Promise<TResponseBody> {
   const queryString = stringify({
@@ -54,38 +56,72 @@ export async function request<TRequestBody, TResponseBody = TRequestBody>(
   return respBody as TResponseBody;
 }
 
-export function createSearchRequestFn<T extends TSchema>(resourcePath: string) {
-  return (params?: ApiPaginationParams) => {
-    return request<Static<T>[]>(resourcePath, { method: "get", query: params });
-  };
-}
+export type RequestCreatorOptions = {
+  resourcePath: string;
+  getToken?: () => Promise<string | undefined>;
+};
 
-export function createGetRequestFn<T extends TSchema>(resourcePath: string) {
-  return function get(id: ModelId) {
-    return request<Static<T>>(`${resourcePath}/${id}`, { method: "get" });
-  };
-}
-
-export function createCreateRequestFn<T extends TSchema>(resourcePath: string) {
-  return async (body: Static<T>) => {
-    return request<Static<T>>(resourcePath, { method: "post", body });
-  };
-}
-
-export function createUpdateRequestFn<T extends TSchema>(
-  resourcePath: string,
-  idKey: keyof Static<T> | "id" = "id"
-) {
-  return async (body: Static<T> & { id: typeof idKey }) => {
-    return request<Static<T>>(`${resourcePath}/${body[idKey]}`, {
-      method: "put",
-      body,
+export function createSearchRequestFn<T extends TSchema>({
+  resourcePath,
+  getToken,
+}: RequestCreatorOptions) {
+  return async function search(params?: ApiPaginationParams) {
+    return request<Static<T>[]>(resourcePath, {
+      method: "get",
+      query: params,
+      token: await getToken?.(),
     });
   };
 }
 
-export function createRemoveRequestFn<T extends TSchema>(path: string) {
-  return async (body: Static<T>) => {
-    return request<Static<T>, void>(path, { method: "delete", body });
+export function createGetRequestFn<T extends TSchema>({
+  resourcePath,
+  getToken,
+}: RequestCreatorOptions) {
+  return async function get(id: ModelId) {
+    return request<Static<T>>(`${resourcePath}/${id}`, {
+      method: "get",
+      token: await getToken?.(),
+    });
+  };
+}
+
+export function createCreateRequestFn<T extends TSchema>({
+  resourcePath,
+  getToken,
+}: RequestCreatorOptions) {
+  return async function create(body: Static<T>) {
+    return request<Static<T>>(resourcePath, {
+      method: "post",
+      body,
+      token: await getToken?.(),
+    });
+  };
+}
+
+export function createUpdateRequestFn<T extends TSchema>({
+  resourcePath,
+  idKey = "id",
+  getToken,
+}: RequestCreatorOptions & { idKey: keyof Static<T> | "id" }) {
+  return async function update(body: Static<T> & { id: typeof idKey }) {
+    return request<Static<T>>(`${resourcePath}/${body[idKey]}`, {
+      method: "put",
+      body,
+      token: await getToken?.(),
+    });
+  };
+}
+
+export function createRemoveRequestFn<T extends TSchema>({
+  resourcePath,
+  getToken,
+}: RequestCreatorOptions) {
+  return async function remove(body: Static<T>) {
+    return request<Static<T>, void>(resourcePath, {
+      method: "delete",
+      body,
+      token: await getToken?.(),
+    });
   };
 }

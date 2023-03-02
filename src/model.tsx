@@ -91,6 +91,7 @@ export function createApiModel<TModel extends TSchema>({
   const factoryFn = ({
     client,
     baseUrl = "",
+    getToken = () => Promise.resolve(undefined),
   }: ModelFactoryOptions): Model<TModel> => {
     const modelKeys = {
       search: (params?: ApiPaginationParams) => [
@@ -105,7 +106,7 @@ export function createApiModel<TModel extends TSchema>({
     const createMutation = createCreateMutation<TModel>(name, {
       client,
       idKey,
-      createFn: createCreateRequestFn<TModel>(resourcePath),
+      createFn: createCreateRequestFn<TModel>({ resourcePath, getToken }),
       itemCacheKey: modelKeys.get,
       itemIndexCacheKey: modelKeys.search,
     });
@@ -113,7 +114,11 @@ export function createApiModel<TModel extends TSchema>({
     const updateMutation = createUpdateMutation<TModel>(name, {
       client,
       idKey,
-      updateFn: createUpdateRequestFn<TModel>(resourcePath, idKey),
+      updateFn: createUpdateRequestFn<TModel>({
+        resourcePath,
+        idKey,
+        getToken,
+      }),
       itemCacheKey: modelKeys.get,
       itemIndexCacheKey: modelKeys.search,
     });
@@ -121,18 +126,18 @@ export function createApiModel<TModel extends TSchema>({
     const removeMutation = createDeleteMutation<TModel>(name, {
       client,
       idKey,
-      deleteFn: createRemoveRequestFn<TModel>(resourcePath),
+      deleteFn: createRemoveRequestFn<TModel>({ resourcePath, getToken }),
       itemCacheKey: modelKeys.get,
       itemIndexCacheKey: modelKeys.search,
     });
 
     const itemQuery = (id: ModelId) => {
-      const fn = createGetRequestFn<TModel>(resourcePath);
+      const fn = createGetRequestFn<TModel>({ resourcePath, getToken });
       return useQuery<Static<TModel>>(modelKeys.get(id), () => fn(id), {});
     };
 
     const searchQuery = (params?: ApiPaginationParams) => {
-      const fn = createSearchRequestFn<TModel>(resourcePath);
+      const fn = createSearchRequestFn<TModel>({ resourcePath, getToken });
       return useQuery<Static<TModel>[]>(modelKeys.search(params), () => fn());
     };
 
