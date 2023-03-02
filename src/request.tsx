@@ -3,8 +3,6 @@ import { Static, TSchema } from "@sinclair/typebox";
 
 import { ModelId } from "./model";
 
-const token = "";
-
 export interface ApiPaginationParams {
   limit?: number;
   offset?: number;
