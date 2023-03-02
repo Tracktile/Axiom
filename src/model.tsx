@@ -23,7 +23,15 @@ import {
 
 export type ModelId = string | number;
 
-export type ModelFactory<T extends TSchema> = (client: QueryClient) => Model<T>;
+export type ModelFactoryOptions = {
+  client: QueryClient;
+  baseUrl?: string;
+  getToken?: () => Promise<string | undefined>;
+};
+
+export type ModelFactory<T extends TSchema> = (
+  options: ModelFactoryOptions
+) => Model<T>;
 
 export class Model<TModel extends TSchema> {
   schema!: TModel;
@@ -64,13 +72,26 @@ interface CreateApiModelOptions<Schema extends TSchema> {
   idKey?: keyof Static<Schema> | "id";
 }
 
+const buildResourcePath = (baseUrl: string, resource: string) => {
+  const cleanBaseUrl = baseUrl.endsWith("/")
+    ? baseUrl.substr(0, baseUrl.length - 1)
+    : baseUrl;
+  const cleanResource = resource.startsWith("/")
+    ? resource.substr(1)
+    : resource;
+  return `${cleanBaseUrl}/${cleanResource}`;
+};
+
 export function createApiModel<TModel extends TSchema>({
   name,
   resource,
   schema,
   idKey = "id",
 }: CreateApiModelOptions<TModel>): ModelFactory<TModel> & { schema: TModel } {
-  const factoryFn = (client: QueryClient): Model<TModel> => {
+  const factoryFn = ({
+    client,
+    baseUrl = "",
+  }: ModelFactoryOptions): Model<TModel> => {
     const modelKeys = {
       search: (params?: ApiPaginationParams) => [
         name,
@@ -79,10 +100,12 @@ export function createApiModel<TModel extends TSchema>({
       get: (id: ModelId) => [name, id],
     };
 
+    const resourcePath = buildResourcePath(baseUrl, resource);
+
     const createMutation = createCreateMutation<TModel>(name, {
       client,
       idKey,
-      createFn: createCreateRequestFn<TModel>(resource),
+      createFn: createCreateRequestFn<TModel>(resourcePath),
       itemCacheKey: modelKeys.get,
       itemIndexCacheKey: modelKeys.search,
     });
@@ -90,7 +113,7 @@ export function createApiModel<TModel extends TSchema>({
     const updateMutation = createUpdateMutation<TModel>(name, {
       client,
       idKey,
-      updateFn: createUpdateRequestFn<TModel>(resource, idKey),
+      updateFn: createUpdateRequestFn<TModel>(resourcePath, idKey),
       itemCacheKey: modelKeys.get,
       itemIndexCacheKey: modelKeys.search,
     });
@@ -98,18 +121,18 @@ export function createApiModel<TModel extends TSchema>({
     const removeMutation = createDeleteMutation<TModel>(name, {
       client,
       idKey,
-      deleteFn: createRemoveRequestFn<TModel>(resource),
+      deleteFn: createRemoveRequestFn<TModel>(resourcePath),
       itemCacheKey: modelKeys.get,
       itemIndexCacheKey: modelKeys.search,
     });
 
     const itemQuery = (id: ModelId) => {
-      const fn = createGetRequestFn<TModel>(resource);
+      const fn = createGetRequestFn<TModel>(resourcePath);
       return useQuery<Static<TModel>>(modelKeys.get(id), () => fn(id), {});
     };
 
     const searchQuery = (params?: ApiPaginationParams) => {
-      const fn = createSearchRequestFn<TModel>(resource);
+      const fn = createSearchRequestFn<TModel>(resourcePath);
       return useQuery<Static<TModel>[]>(modelKeys.search(params), () => fn());
     };
 

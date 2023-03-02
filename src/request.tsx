@@ -3,7 +3,6 @@ import { Static, TSchema } from "@sinclair/typebox";
 
 import { ModelId } from "./model";
 
-const api = "";
 const token = "";
 
 export interface ApiPaginationParams {
@@ -19,7 +18,7 @@ export interface APIRequestParams<T> {
 }
 
 export async function request<TRequestBody, TResponseBody = TRequestBody>(
-  resource: string,
+  url: string,
   {
     method = "get",
     headers = {},
@@ -27,19 +26,14 @@ export async function request<TRequestBody, TResponseBody = TRequestBody>(
     body,
   }: APIRequestParams<TRequestBody> = {}
 ): Promise<TResponseBody> {
-  const cleanResource = resource.startsWith("/")
-    ? resource.substr(1)
-    : resource;
   const queryString = stringify({
     ...query,
     offset: query.offset ?? 0,
     limit: query.limit ?? 100,
   });
-  const url = `${api}/${cleanResource}${
-    !!queryString ? `?${queryString}` : ""
-  }`;
+  const uri = `${url}${!!queryString ? `?${queryString}` : ""}`;
 
-  const resp = await fetch(url, {
+  const resp = await fetch(uri, {
     method,
     headers: {
       "Content-Type": "application/json",
@@ -60,30 +54,30 @@ export async function request<TRequestBody, TResponseBody = TRequestBody>(
   return respBody as TResponseBody;
 }
 
-export function createSearchRequestFn<T extends TSchema>(path: string) {
+export function createSearchRequestFn<T extends TSchema>(resourcePath: string) {
   return (params?: ApiPaginationParams) => {
-    return request<Static<T>[]>(path, { method: "get", query: params });
+    return request<Static<T>[]>(resourcePath, { method: "get", query: params });
   };
 }
 
-export function createGetRequestFn<T extends TSchema>(path: string) {
+export function createGetRequestFn<T extends TSchema>(resourcePath: string) {
   return function get(id: ModelId) {
-    return request<Static<T>>(`${path}/${id}`, { method: "get" });
+    return request<Static<T>>(`${resourcePath}/${id}`, { method: "get" });
   };
 }
 
-export function createCreateRequestFn<T extends TSchema>(path: string) {
+export function createCreateRequestFn<T extends TSchema>(resourcePath: string) {
   return async (body: Static<T>) => {
-    return request<Static<T>>(path, { method: "post", body });
+    return request<Static<T>>(resourcePath, { method: "post", body });
   };
 }
 
 export function createUpdateRequestFn<T extends TSchema>(
-  path: string,
+  resourcePath: string,
   idKey: keyof Static<T> | "id" = "id"
 ) {
   return async (body: Static<T> & { id: typeof idKey }) => {
-    return request<Static<T>>(`${path}/${body[idKey]}`, {
+    return request<Static<T>>(`${resourcePath}/${body[idKey]}`, {
       method: "put",
       body,
     });

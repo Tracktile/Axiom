@@ -6,7 +6,7 @@ import { ApiProvider, createApi, createUseApiHook } from "../src";
 
 const models = { User };
 
-const useApi = createUseApiHook<typeof models>(models);
+const useApi = createUseApiHook<typeof models>();
 
 function Users() {
   const api = useApi();
@@ -23,14 +23,3 @@ function App() {
 }
 
 export default App;
-
-const direct = createApi({
-  client: new QueryClient(),
-  baseUrl: "",
-  models: { User },
-});
-
-User.schema;
-direct.User.schema;
-
-const { data, isLoading } = direct.User.get(1);
