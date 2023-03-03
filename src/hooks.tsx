@@ -14,7 +14,7 @@ type ApiProviderProps<M extends Record<string, ModelFactory<any>>> = {
   models: M;
   baseUrl: string;
   client?: QueryClient;
-  getToken: () => Promise<string | undefined>;
+  getToken?: () => Promise<string | undefined>;
 };
 
 export function ApiProvider<M extends Record<string, ModelFactory<any>>>({
