@@ -25,26 +25,35 @@
 ## Usage
 
 ```typescript
-import {createApiModel, createApi } from '@tracktile/axiom';
+import {createApiModel, createApiProvider } from '@tracktile/axiom';
 
-# Create an API Model
+// Create an API Model
 export const User = createApiModel({
   name: "User",
   resource: "/users",
   schema: Type.Object({
     id: Type.String(),
+    name: Type.String(),
     email: Type.String(),
-    firstName: Type.String(),
-    lastName: Type.String(),
     enabled: Type.Boolean(),
   }),
 });
 
-# Create an API from your models
-const api = createApi({ User })
+// Collect your models
+const models = { User }
+
+// Create an APIProvider based on your models
+const ApiProvider = createApiProvider<typeof models>();
+
+// Create a useApi hook based on your models
+const useApi = createUseApiHook<typeof models>();
+
+// Use them to access your API in your application!
+// Queries are cached and retried automatically
+// Mutations are optimistic by default and retry forever
 
 const MyReactComponent = () => {
-  # Access stateful queries and mutations with accurate type safety, inferred from your models.
+  // Access stateful queries and mutations with accurate type safety, inferred from your models.
   const { data: users, isLoading: isLoadingUsers, dataUpdatedAt: usersUpdatedAt } = api.User.search();
   const { mutate: createUser, isLoading: isCreatingUser} = api.User.create()
   return (
@@ -66,7 +75,7 @@ export default MyReactComponent;
 
 ## Examples
 
-Small example projects can be found in the [examples/](./examples) folder.
+Small example project can be found in the [example/](./example) folder.
 
 ## Authors
 
