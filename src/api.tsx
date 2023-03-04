@@ -18,7 +18,7 @@ interface CreateApiOptions<M extends Record<string, ModelFactory<any>>>
 export function createApi<M extends Record<string, ModelFactory<any>>>({
   models,
   client,
-  baseUrl = "",
+  baseUrl,
   getToken = async () => undefined,
 }: CreateApiOptions<M>): ModelMap<M> {
   return Object.keys(models).reduce(

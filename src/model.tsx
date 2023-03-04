@@ -18,14 +18,14 @@ import {
   createRemoveRequestFn,
   createSearchRequestFn,
   createUpdateRequestFn,
-  ApiPaginationParams,
+  QueryParameters,
 } from "./request";
 
 export type ModelId = string | number;
 
 export type ModelFactoryOptions = {
   client: QueryClient;
-  baseUrl?: string;
+  baseUrl: string;
   getToken?: () => Promise<string | undefined>;
 };
 
@@ -53,7 +53,7 @@ export class Model<TModel extends TSchema> {
   >;
   get!: (id: ModelId) => UseQueryResult<Static<TModel>, unknown>;
   search!: (
-    params?: ApiPaginationParams
+    params?: QueryParameters
   ) => UseQueryResult<Static<TModel>[], unknown>;
   invalidateOne!: (id: ModelId) => Promise<void>;
   invalidateAll!: () => Promise<void>;
@@ -90,11 +90,11 @@ export function createApiModel<TModel extends TSchema>({
 }: CreateApiModelOptions<TModel>): ModelFactory<TModel> & { schema: TModel } {
   const factoryFn = ({
     client,
-    baseUrl = "",
+    baseUrl,
     getToken = () => Promise.resolve(undefined),
   }: ModelFactoryOptions): Model<TModel> => {
     const modelKeys = {
-      search: (params?: ApiPaginationParams) => [
+      search: (params?: Record<string, string | number | boolean>) => [
         name,
         ...(params ? [params] : []),
       ],
@@ -136,7 +136,7 @@ export function createApiModel<TModel extends TSchema>({
       return useQuery<Static<TModel>>(modelKeys.get(id), () => fn(id), {});
     };
 
-    const searchQuery = (params?: ApiPaginationParams) => {
+    const searchQuery = (params?: QueryParameters) => {
       const fn = createSearchRequestFn<TModel>({ resourcePath, getToken });
       return useQuery<Static<TModel>[]>(modelKeys.search(params), () => fn());
     };

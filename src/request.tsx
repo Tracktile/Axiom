@@ -3,15 +3,12 @@ import { Static, TSchema } from "@sinclair/typebox";
 
 import { ModelId } from "./model";
 
-export interface ApiPaginationParams {
-  limit?: number;
-  offset?: number;
-}
+export type QueryParameters = Record<string, string | number | boolean>;
 
 export interface APIRequestParams<T> {
   method?: string;
   headers?: Record<string, string>;
-  query?: ApiPaginationParams;
+  query?: QueryParameters;
   body?: T;
   token?: string;
 }
@@ -26,11 +23,7 @@ export async function request<TRequestBody, TResponseBody = TRequestBody>(
     token,
   }: APIRequestParams<TRequestBody> = {}
 ): Promise<TResponseBody> {
-  const queryString = stringify({
-    ...query,
-    offset: query.offset ?? 0,
-    limit: query.limit ?? 100,
-  });
+  const queryString = stringify(query);
   const uri = `${url}${!!queryString ? `?${queryString}` : ""}`;
 
   const resp = await fetch(uri, {
@@ -63,7 +56,7 @@ export function createSearchRequestFn<T extends TSchema>({
   resourcePath,
   getToken,
 }: RequestCreatorOptions) {
-  return async function search(params?: ApiPaginationParams) {
+  return async function search(params?: QueryParameters) {
     return request<Static<T>[]>(resourcePath, {
       method: "get",
       query: params,
