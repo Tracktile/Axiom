@@ -216,5 +216,6 @@ export function createDeleteMutation<T extends TSchema>(
       }
     },
   });
-  return () => useMutation<Static<T>, unknown, Static<T>>([mutationName]);
+  return (options?: MutationOptions<Static<T>, unknown, Static<T>>) =>
+    useMutation<Static<T>, unknown, Static<T>>([mutationName], options);
 }

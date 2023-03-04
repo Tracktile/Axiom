@@ -5,6 +5,7 @@ import {
   UseQueryResult,
   UseMutationResult,
   MutationOptions,
+  QueryOptions,
 } from "@tanstack/react-query";
 import { TSchema, Static } from "@sinclair/typebox";
 import {
@@ -132,14 +133,21 @@ export function createApiModel<TModel extends TSchema>({
       itemIndexCacheKey: modelKeys.search,
     });
 
-    const itemQuery = (id: ModelId) => {
+    const itemQuery = (id: ModelId, options?: QueryOptions<Static<TModel>>) => {
       const fn = createGetRequestFn<TModel>({ resourcePath, token });
-      return useQuery<Static<TModel>>(modelKeys.get(id), () => fn(id), {});
+      return useQuery<Static<TModel>>(modelKeys.get(id), () => fn(id), options);
     };
 
-    const searchQuery = (params?: QueryParameters) => {
+    const searchQuery = (
+      params?: QueryParameters,
+      options?: QueryOptions<Static<TModel>[]>
+    ) => {
       const fn = createSearchRequestFn<TModel>({ resourcePath, token });
-      return useQuery<Static<TModel>[]>(modelKeys.search(params), () => fn());
+      return useQuery<Static<TModel>[]>(
+        modelKeys.search(params),
+        () => fn(),
+        options
+      );
     };
 
     const model: Model<TModel> = new Model({
