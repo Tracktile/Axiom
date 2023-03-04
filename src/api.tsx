@@ -19,12 +19,12 @@ export function createApi<M extends Record<string, ModelFactory<any>>>({
   models,
   client,
   baseUrl,
-  getToken = async () => undefined,
+  token,
 }: CreateApiOptions<M>): ModelMap<M> {
   return Object.keys(models).reduce(
     (acc, key) => ({
       ...acc,
-      [key as keyof M]: models[key as keyof M]({ client, baseUrl, getToken }),
+      [key as keyof M]: models[key as keyof M]({ client, baseUrl, token }),
     }),
     {} as ModelMap<M>
   );

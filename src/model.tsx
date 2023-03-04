@@ -1,3 +1,4 @@
+import { createRef, MutableRefObject } from "react";
 import {
   QueryClient,
   useQuery,
@@ -26,7 +27,7 @@ export type ModelId = string | number;
 export type ModelFactoryOptions = {
   client: QueryClient;
   baseUrl: string;
-  getToken?: () => Promise<string | undefined>;
+  token?: MutableRefObject<string | null>;
 };
 
 export type ModelFactory<T extends TSchema> = (
@@ -91,7 +92,7 @@ export function createApiModel<TModel extends TSchema>({
   const factoryFn = ({
     client,
     baseUrl,
-    getToken = () => Promise.resolve(undefined),
+    token = createRef<string>(),
   }: ModelFactoryOptions): Model<TModel> => {
     const modelKeys = {
       search: (params?: Record<string, string | number | boolean>) => [
@@ -106,7 +107,7 @@ export function createApiModel<TModel extends TSchema>({
     const createMutation = createCreateMutation<TModel>(name, {
       client,
       idKey,
-      createFn: createCreateRequestFn<TModel>({ resourcePath, getToken }),
+      createFn: createCreateRequestFn<TModel>({ resourcePath, token }),
       itemCacheKey: modelKeys.get,
       itemIndexCacheKey: modelKeys.search,
     });
@@ -117,7 +118,7 @@ export function createApiModel<TModel extends TSchema>({
       updateFn: createUpdateRequestFn<TModel>({
         resourcePath,
         idKey,
-        getToken,
+        token,
       }),
       itemCacheKey: modelKeys.get,
       itemIndexCacheKey: modelKeys.search,
@@ -126,18 +127,18 @@ export function createApiModel<TModel extends TSchema>({
     const removeMutation = createDeleteMutation<TModel>(name, {
       client,
       idKey,
-      deleteFn: createRemoveRequestFn<TModel>({ resourcePath, getToken }),
+      deleteFn: createRemoveRequestFn<TModel>({ resourcePath, token }),
       itemCacheKey: modelKeys.get,
       itemIndexCacheKey: modelKeys.search,
     });
 
     const itemQuery = (id: ModelId) => {
-      const fn = createGetRequestFn<TModel>({ resourcePath, getToken });
+      const fn = createGetRequestFn<TModel>({ resourcePath, token });
       return useQuery<Static<TModel>>(modelKeys.get(id), () => fn(id), {});
     };
 
     const searchQuery = (params?: QueryParameters) => {
-      const fn = createSearchRequestFn<TModel>({ resourcePath, getToken });
+      const fn = createSearchRequestFn<TModel>({ resourcePath, token });
       return useQuery<Static<TModel>[]>(modelKeys.search(params), () => fn());
     };
 

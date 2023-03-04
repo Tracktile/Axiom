@@ -1,5 +1,10 @@
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
-import React, { createContext, useContext, PropsWithChildren } from "react";
+import React, {
+  createContext,
+  useContext,
+  PropsWithChildren,
+  MutableRefObject,
+} from "react";
 
 import { ModelFactory } from "./model";
 import { createApi, ModelMap } from "./api";
@@ -14,7 +19,7 @@ type ApiProviderProps<M extends Record<string, ModelFactory<any>>> = {
   models: M;
   baseUrl: string;
   client?: QueryClient;
-  getToken?: () => Promise<string | undefined>;
+  token?: MutableRefObject<string | null>;
 };
 
 export function ApiProvider<M extends Record<string, ModelFactory<any>>>({
@@ -22,13 +27,13 @@ export function ApiProvider<M extends Record<string, ModelFactory<any>>>({
   baseUrl,
   models,
   children,
-  getToken = async () => undefined,
+  token,
 }: PropsWithChildren<ApiProviderProps<M>>) {
   const api = createApi<M>({
     client,
     models,
     baseUrl,
-    getToken,
+    token,
   });
   return (
     <QueryClientProvider client={client}>

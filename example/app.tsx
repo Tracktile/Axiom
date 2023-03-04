@@ -1,4 +1,4 @@
-import React from "react";
+import React, { createRef } from "react";
 
 import { User } from "./models/user";
 import { createApiProvider, createUseApiHook } from "../src";
@@ -7,6 +7,8 @@ const models = { User };
 
 const useApi = createUseApiHook<typeof models>();
 const ApiProvider = createApiProvider<typeof models>();
+
+const token = createRef<string | null>();
 
 function Users() {
   const { User } = useApi();
@@ -39,7 +41,11 @@ function Users() {
 
 function App() {
   return (
-    <ApiProvider models={models} baseUrl="https://gorest.co.in/public/v2">
+    <ApiProvider
+      models={models}
+      token={token}
+      baseUrl="https://gorest.co.in/public/v2"
+    >
       <Users />
     </ApiProvider>
   );
