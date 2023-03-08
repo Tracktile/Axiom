@@ -156,7 +156,7 @@ export function createUpdateMutation<T extends TSchema>(
 interface DeletePersistMutationOptions<T extends TSchema> {
   client: QueryClient;
   idKey?: keyof Static<T> | "id";
-  deleteFn: (item: Static<T>) => Promise<void>;
+  deleteFn: (item: Static<T> & { id: ModelId }) => Promise<void>;
   itemCacheKey: (id: ModelId) => QueryKey;
   itemIndexCacheKey: () => QueryKey;
 }
@@ -174,7 +174,7 @@ export function createDeleteMutation<T extends TSchema>(
   const mutationName = `${name}_delete`;
   client.setMutationDefaults([mutationName], {
     retry: 0,
-    mutationFn: (item: Static<T>) => deleteFn(item),
+    mutationFn: (item: Static<T> & { id: ModelId }) => deleteFn(item),
     onMutate: async (item: Static<T>): Promise<TContext<Static<T>>> => {
       await client.cancelQueries(
         itemCacheKey((item as Record<string, ModelId>)[idKey] as ModelId)

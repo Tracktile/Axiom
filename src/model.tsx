@@ -47,15 +47,16 @@ export class Model<TModel extends TSchema> {
       | MutationOptions<Static<TModel>, unknown, Static<TModel>, unknown>
       | undefined
   ) => UseMutationResult<Static<TModel>, unknown, Static<TModel>, unknown>;
-  remove!: () => UseMutationResult<
-    Static<TModel>,
-    unknown,
-    Static<TModel>,
-    unknown
-  >;
-  get!: (id: ModelId) => UseQueryResult<Static<TModel>, unknown>;
+  remove!: (
+    options?: MutationOptions<Static<TModel>, unknown, Static<TModel>>
+  ) => UseMutationResult<Static<TModel>, unknown, Static<TModel>, unknown>;
+  get!: (
+    id: ModelId,
+    options?: QueryOptions<Static<TModel>>
+  ) => UseQueryResult<Static<TModel>, unknown>;
   search!: (
-    params?: QueryParameters
+    params?: QueryParameters,
+    options?: QueryOptions<Static<TModel>[]>
   ) => UseQueryResult<Static<TModel>[], unknown>;
   invalidateOne!: (id: ModelId) => Promise<void>;
   invalidateAll!: () => Promise<void>;
@@ -128,7 +129,10 @@ export function createApiModel<TModel extends TSchema>({
     const removeMutation = createDeleteMutation<TModel>(name, {
       client,
       idKey,
-      deleteFn: createRemoveRequestFn<TModel>({ resourcePath, token }),
+      deleteFn: createRemoveRequestFn<TModel & { id: ModelId }>({
+        resourcePath,
+        token,
+      }),
       itemCacheKey: modelKeys.get,
       itemIndexCacheKey: modelKeys.search,
     });

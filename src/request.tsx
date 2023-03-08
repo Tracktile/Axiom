@@ -109,8 +109,8 @@ export function createRemoveRequestFn<T extends TSchema>({
   resourcePath,
   token,
 }: RequestCreatorOptions) {
-  return async function remove(body: Static<T>) {
-    return request<Static<T>, void>(resourcePath, {
+  return async function remove(body: Static<T> & { id: ModelId }) {
+    return request<Static<T>, void>(`${resourcePath}/${body.id}`, {
       method: "delete",
       body,
       token: token.current,
