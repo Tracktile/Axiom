@@ -122,10 +122,15 @@ export function createUpdateMutation<T extends TSchema>(
         itemCacheKey((item as Record<string, ModelId>)[idKey] as ModelId),
         item
       );
-      client.setQueryData<Static<T>[]>(itemIndexCacheKey(), (oldData = []) => [
-        ...oldData,
-        item,
-      ]);
+      client.setQueryData<Static<T>[]>(itemIndexCacheKey(), (oldData = []) =>
+        oldData.map((oldItem) => {
+          const itemId = (item as Record<string, ModelId>)[idKey] as ModelId;
+          const oldItemId = (oldItem as Record<string, ModelId>)[
+            idKey
+          ] as ModelId;
+          return itemId === oldItemId ? item : oldItem;
+        })
+      );
       return { previous };
     },
     onSuccess: () => {

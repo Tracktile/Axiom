@@ -2,7 +2,7 @@ import { stringify } from "qs";
 import { Static, TSchema } from "@sinclair/typebox";
 
 import { ModelId } from "./model";
-import { MutableRefObject, Ref } from "react";
+import { MutableRefObject } from "react";
 
 export type QueryParameters = Record<string, string | number | boolean>;
 
