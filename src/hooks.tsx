@@ -37,7 +37,7 @@ export function ApiProvider<M extends Record<string, ModelFactory<any>>>({
   });
   return (
     <QueryClientProvider client={client}>
-      <ApiContext.Provider value={{ api }}>{children}</ApiContext.Provider>;
+      <ApiContext.Provider value={{ api }}>{children}</ApiContext.Provider>
     </QueryClientProvider>
   );
 }
