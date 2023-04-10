@@ -149,7 +149,7 @@ export function createApiModel<TModel extends TSchema>({
       const fn = createSearchRequestFn<TModel>({ resourcePath, token });
       return useQuery<Static<TModel>[]>(
         modelKeys.search(params),
-        () => fn(),
+        () => fn(params),
         options
       );
     };
