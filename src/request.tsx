@@ -27,6 +27,8 @@ export async function request<TRequestBody, TResponseBody = TRequestBody>(
   const queryString = stringify(query);
   const uri = `${url}${!!queryString ? `?${queryString}` : ""}`;
 
+  console.log("request", { token });
+
   const resp = await fetch(uri, {
     method,
     headers: {

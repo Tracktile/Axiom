@@ -3,7 +3,7 @@ import React, {
   createContext,
   useContext,
   PropsWithChildren,
-  MutableRefObject,
+  useRef,
 } from "react";
 
 import { ModelFactory } from "./model";
@@ -19,7 +19,7 @@ type ApiProviderProps<M extends Record<string, ModelFactory<any>>> = {
   models: M;
   baseUrl: string;
   client?: QueryClient;
-  token?: MutableRefObject<string | null>;
+  token?: string;
 };
 
 export function ApiProvider<M extends Record<string, ModelFactory<any>>>({
@@ -29,11 +29,13 @@ export function ApiProvider<M extends Record<string, ModelFactory<any>>>({
   children,
   token,
 }: PropsWithChildren<ApiProviderProps<M>>) {
+  const tokenRef = useRef<string | null>(token ?? null);
+  tokenRef.current = token ?? null;
   const api = createApi<M>({
     client,
     models,
     baseUrl,
-    token,
+    token: tokenRef,
   });
   return (
     <QueryClientProvider client={client}>
