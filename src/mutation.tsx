@@ -161,7 +161,10 @@ export function createUpdateMutation<T extends TSchema>(
       }
     },
   });
-  return (options?: MutationOptions<Static<T>, unknown, Static<T>>) =>
+  return (
+    id: string | number,
+    options?: MutationOptions<Static<T>, unknown, Static<T>>
+  ) =>
     useMutation<Static<T>, unknown, Static<T>>({
       mutationKey: [mutationName],
       ...options,

@@ -51,6 +51,7 @@ export class Model<TModel extends TSchema> {
       | undefined
   ) => UseMutationResult<Static<TModel>, unknown, Static<TModel>, unknown>;
   update!: (
+    id: string | number,
     options?:
       | MutationOptions<Static<TModel>, unknown, Static<TModel>, unknown>
       | undefined
