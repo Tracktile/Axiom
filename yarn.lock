@@ -27,23 +27,22 @@
     "@jridgewell/resolve-uri" "^3.0.3"
     "@jridgewell/sourcemap-codec" "^1.4.10"
 
-"@sinclair/typebox@^0.25.24":
-  version "0.25.24"
-  resolved "https://registry.yarnpkg.com/@sinclair/typebox/-/typebox-0.25.24.tgz#8c7688559979f7079aacaf31aa881c3aa410b718"
-  integrity sha512-XJfwUVUKDHF5ugKwIcxEgc9k8b7HbznCp6eUfWgu710hMPNIO4aw4/zB5RogDQz8nd6gyCDpU9O/m6qYEWY6yQ==
+"@sinclair/typebox@^0.28.5":
+  version "0.28.5"
+  resolved "https://registry.yarnpkg.com/@sinclair/typebox/-/typebox-0.28.5.tgz#5bb0568c9bca97a1f031c3a30ac625976d22d235"
+  integrity sha512-3BjziLrALI2q+KpSKMwQdHP0MwmBpiu3oH0LM3mr7Aob9xO2z1hbGxjorTH7l5msuevXH7TU7YLt3Qs7U6Iokg==
 
-"@tanstack/query-core@4.24.10":
-  version "4.24.10"
-  resolved "https://registry.yarnpkg.com/@tanstack/query-core/-/query-core-4.24.10.tgz#758e1f5b2d7faf7316d299facd272a9f64c26299"
-  integrity sha512-2QywqXEAGBIUoTdgn1lAB4/C8QEqwXHj2jrCLeYTk2xVGtLiPEUD8jcMoeB2noclbiW2mMt4+Fq7fZStuz3wAQ==
+"@tanstack/query-core@5.0.0-alpha.19":
+  version "5.0.0-alpha.19"
+  resolved "https://registry.yarnpkg.com/@tanstack/query-core/-/query-core-5.0.0-alpha.19.tgz#f71a88ae75e37a5c82dfc17b09a854740c12707c"
+  integrity sha512-3W30tOF9TKXdG2Ke2c+DHIVLkTTOK+4Zcynre6qDMjd6/xvK/hLhk0FYyrPAhLoxlqPrMS/4RqHjNGay7g19bQ==
 
-"@tanstack/react-query@^4.24.10":
-  version "4.24.10"
-  resolved "https://registry.yarnpkg.com/@tanstack/react-query/-/react-query-4.24.10.tgz#2e1004bb1d1f55198961a21e875e2c65ec865130"
-  integrity sha512-FY1DixytOcNNCydPQXLxuKEV7VSST32CAuJ55BjhDNqASnMLZn+6c30yQBMrODjmWMNwzfjMZnq0Vw7C62Fwow==
+"@tanstack/react-query@^5.0.0-alpha.19":
+  version "5.0.0-alpha.19"
+  resolved "https://registry.yarnpkg.com/@tanstack/react-query/-/react-query-5.0.0-alpha.19.tgz#d5bad1b99de89a3237013189b9764d9649264b5c"
+  integrity sha512-hXkvGtxLVrzZOYJEra32LcfatNUz1NqEIsQjD//aG8c7fD4/9Bou6DmIZMaQu1CRTSs9yiUWzUFmhSxAhnJN+Q==
   dependencies:
-    "@tanstack/query-core" "4.24.10"
-    use-sync-external-store "^1.2.0"
+    "@tanstack/query-core" "5.0.0-alpha.19"
 
 "@tsconfig/node10@^1.0.7":
   version "1.0.9"
@@ -202,11 +201,6 @@ typescript@^4.8.4:
   version "4.9.5"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.9.5.tgz#095979f9bcc0d09da324d58d03ce8f8374cbe65a"
   integrity sha512-1FXk9E2Hm+QzZQ7z+McJiHL4NW1F2EzMu9Nq9i3zAaGqibafqYwCVU6WyWAuyQRRzOlxou8xZSyXLEN8oKj24g==
-
-use-sync-external-store@^1.2.0:
-  version "1.2.0"
-  resolved "https://registry.yarnpkg.com/use-sync-external-store/-/use-sync-external-store-1.2.0.tgz#7dbefd6ef3fe4e767a0cf5d7287aacfb5846928a"
-  integrity sha512-eEgnFxGQ1Ife9bzYs6VLi8/4X6CObHMw9Qr9tPY43iKwsPw8xE8+EFsf/2cFZ5S3esXgpWgtSCtLNS41F+sKPA==
 
 v8-compile-cache-lib@^3.0.1:
   version "3.0.1"

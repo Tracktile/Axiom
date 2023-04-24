@@ -46,9 +46,11 @@ export function createCreateMutation<T extends TSchema>(
       return createFn(item);
     },
     onMutate: async (item: Static<T>): Promise<TContext<Static<T>>> => {
-      await client.cancelQueries(
-        itemCacheKey((item as Record<string, ModelId>)[idKey] as ModelId)
-      );
+      await client.cancelQueries({
+        queryKey: itemCacheKey(
+          (item as Record<string, ModelId>)[idKey] as ModelId
+        ),
+      });
       const previous = client.getQueryData<T>(
         itemCacheKey((item as Record<string, ModelId>)[idKey] as ModelId)
       );
@@ -62,7 +64,7 @@ export function createCreateMutation<T extends TSchema>(
       return { previous };
     },
     onSuccess: () => {
-      client.invalidateQueries(itemIndexCacheKey());
+      client.invalidateQueries({ queryKey: itemIndexCacheKey() });
     },
     onError: (_err: Error, item: Static<T>, context?: TContext<Static<T>>) => {
       if (!!context?.previous) {
@@ -83,7 +85,10 @@ export function createCreateMutation<T extends TSchema>(
     },
   });
   return (options?: MutationOptions<Static<T>, unknown, Static<T>>) =>
-    useMutation<Static<T>, unknown, Static<T>>([mutationName], options);
+    useMutation<Static<T>, unknown, Static<T>>({
+      mutationKey: [mutationName],
+      ...options,
+    });
 }
 
 interface createUpdateMutationOptions<T extends TSchema> {
@@ -112,9 +117,11 @@ export function createUpdateMutation<T extends TSchema>(
       return updateFn(item);
     },
     onMutate: async (item: Static<T>): Promise<TContext<Static<T>>> => {
-      await client.cancelQueries(
-        itemCacheKey((item as Record<string, ModelId>)[idKey] as ModelId)
-      );
+      await client.cancelQueries({
+        queryKey: itemCacheKey(
+          (item as Record<string, ModelId>)[idKey] as ModelId
+        ),
+      });
       const previous = client.getQueryData<T>(
         itemCacheKey((item as Record<string, ModelId>)[idKey] as ModelId)
       );
@@ -134,7 +141,7 @@ export function createUpdateMutation<T extends TSchema>(
       return { previous };
     },
     onSuccess: () => {
-      client.invalidateQueries(itemIndexCacheKey());
+      client.invalidateQueries({ queryKey: itemIndexCacheKey() });
     },
     onError: (_err: Error, item: Static<T>, context?: TContext<Static<T>>) => {
       if (!!context?.previous) {
@@ -155,7 +162,10 @@ export function createUpdateMutation<T extends TSchema>(
     },
   });
   return (options?: MutationOptions<Static<T>, unknown, Static<T>>) =>
-    useMutation<Static<T>, unknown, Static<T>>([mutationName], options);
+    useMutation<Static<T>, unknown, Static<T>>({
+      mutationKey: [mutationName],
+      ...options,
+    });
 }
 
 interface DeletePersistMutationOptions<T extends TSchema> {
@@ -181,9 +191,12 @@ export function createDeleteMutation<T extends TSchema>(
     retry: 0,
     mutationFn: (item: Static<T> & { id: ModelId }) => deleteFn(item),
     onMutate: async (item: Static<T>): Promise<TContext<Static<T>>> => {
-      await client.cancelQueries(
-        itemCacheKey((item as Record<string, ModelId>)[idKey] as ModelId)
-      );
+      await client.cancelQueries({
+        queryKey: itemCacheKey(
+          (item as Record<string, ModelId>)[idKey] as ModelId
+        ),
+      });
+
       const previous = client.getQueryData<T>(
         itemCacheKey((item as Record<string, ModelId>)[idKey] as ModelId)
       );
@@ -201,7 +214,7 @@ export function createDeleteMutation<T extends TSchema>(
       return { previous };
     },
     onSuccess: () => {
-      client.invalidateQueries(itemIndexCacheKey());
+      client.invalidateQueries({ queryKey: itemIndexCacheKey() });
     },
     onError: (_err: Error, item: Static<T>, context?: TContext<Static<T>>) => {
       if (typeof context?.previous !== "undefined") {
@@ -222,5 +235,8 @@ export function createDeleteMutation<T extends TSchema>(
     },
   });
   return (options?: MutationOptions<Static<T>, unknown, Static<T>>) =>
-    useMutation<Static<T>, unknown, Static<T>>([mutationName], options);
+    useMutation<Static<T>, unknown, Static<T>>({
+      mutationKey: [mutationName],
+      ...options,
+    });
 }

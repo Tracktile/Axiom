@@ -1,11 +1,18 @@
-import { createRef, MutableRefObject } from "react";
+import { createRef, MutableRefObject, useState } from "react";
 import {
   QueryClient,
   useQuery,
+  useInfiniteQuery,
   UseQueryResult,
+  UseInfiniteQueryResult,
+  UseInfiniteQueryOptions,
+  InfiniteData,
   UseMutationResult,
+  QueryFunction,
+  QueryKey,
   MutationOptions,
   QueryOptions,
+  UseQueryOptions,
 } from "@tanstack/react-query";
 import { TSchema, Static } from "@sinclair/typebox";
 import {
@@ -18,6 +25,7 @@ import {
   createCreateRequestFn,
   createGetRequestFn,
   createRemoveRequestFn,
+  createPaginatedRequestFn,
   createSearchRequestFn,
   createUpdateRequestFn,
   QueryParameters,
@@ -56,8 +64,11 @@ export class Model<TModel extends TSchema> {
   ) => UseQueryResult<Static<TModel>, unknown>;
   search!: (
     params?: QueryParameters,
-    options?: QueryOptions<Static<TModel>[]>
+    options?: UseQueryOptions<Static<TModel>[]>
   ) => UseQueryResult<Static<TModel>[], unknown>;
+  paginated!: (
+    params: PaginationParams
+  ) => UseInfiniteQueryResult<InfiniteData<Static<TModel, []>[]>, Error>;
   invalidateOne!: (id: ModelId) => Promise<void>;
   invalidateAll!: () => Promise<void>;
   read!: (id: ModelId) => TModel | undefined;
@@ -67,6 +78,12 @@ export class Model<TModel extends TSchema> {
     Object.assign(this, model);
   }
 }
+
+export type PaginationParams = {
+  offset?: number;
+  limit?: number;
+  orderBy?: string;
+};
 
 interface CreateApiModelOptions<Schema extends TSchema> {
   name: string;
@@ -139,19 +156,47 @@ export function createApiModel<TModel extends TSchema>({
 
     const itemQuery = (id: ModelId, options?: QueryOptions<Static<TModel>>) => {
       const fn = createGetRequestFn<TModel>({ resourcePath, token });
-      return useQuery<Static<TModel>>(modelKeys.get(id), () => fn(id), options);
+      return useQuery<Static<TModel>>({
+        queryKey: modelKeys.get(id),
+        queryFn: () => fn(id),
+        initialData: [],
+        ...options,
+      });
     };
 
     const searchQuery = (
       params?: QueryParameters,
-      options?: QueryOptions<Static<TModel>[]>
+      options?: UseQueryOptions<Static<TModel>[]>
     ) => {
       const fn = createSearchRequestFn<TModel>({ resourcePath, token });
-      return useQuery<Static<TModel>[]>(
-        modelKeys.search(params),
-        () => fn(params),
-        options
-      );
+      return useQuery<Static<TModel>[]>({
+        queryKey: modelKeys.search(params),
+        queryFn: () => fn(params),
+        ...options,
+        initialData: [],
+      });
+    };
+
+    const infiniteQuery = ({ offset = 0, limit = 100 }: PaginationParams) => {
+      const fn = createPaginatedRequestFn<TModel>({ resourcePath, token });
+      return useInfiniteQuery<
+        Static<TModel, []>[],
+        Error,
+        InfiniteData<Static<TModel, []>[]>,
+        QueryKey,
+        number
+      >({
+        queryKey: modelKeys.search({ offset, limit }),
+        queryFn: ({ pageParam }: { pageParam: number }) =>
+          fn({
+            limit,
+            offset: pageParam * limit,
+          }),
+        defaultPageParam: 0,
+        getNextPageParam: (lastPage, pages) => {
+          return lastPage.length === limit ? pages.length : undefined;
+        },
+      });
     };
 
     const model: Model<TModel> = new Model({
@@ -161,9 +206,11 @@ export function createApiModel<TModel extends TSchema>({
       remove: removeMutation,
       get: itemQuery,
       search: searchQuery,
+      paginated: infiniteQuery,
       invalidateOne: (id: ModelId) =>
-        client.invalidateQueries(modelKeys.get(id)),
-      invalidateAll: () => client.invalidateQueries(modelKeys.search()),
+        client.invalidateQueries({ queryKey: modelKeys.get(id) }),
+      invalidateAll: () =>
+        client.invalidateQueries({ queryKey: modelKeys.search() }),
       read: (id: ModelId) => client.getQueryData<TModel>(modelKeys.get(id)),
       readAll: () => client.getQueryData<TModel[]>(modelKeys.search()),
       readOneFromAll: (id: ModelId) => {

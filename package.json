@@ -14,8 +14,8 @@
     "dist/"
   ],
   "dependencies": {
-    "@sinclair/typebox": "^0.25.24",
-    "@tanstack/react-query": "^4.24.10",
+    "@sinclair/typebox": "^0.28.5",
+    "@tanstack/react-query": "^5.0.0-alpha.19",
     "qs": "^6.11.0"
   },
   "devDependencies": {

@@ -1,4 +1,4 @@
-import React, { createRef } from "react";
+import React from "react";
 
 import { User } from "./models/user";
 import { createApiProvider, createUseApiHook } from "../src";
@@ -8,7 +8,7 @@ const models = { User };
 const useApi = createUseApiHook<typeof models>();
 const ApiProvider = createApiProvider<typeof models>();
 
-const token = createRef<string | null>();
+const token = "TOKEN";
 
 function Users() {
   const { User } = useApi();

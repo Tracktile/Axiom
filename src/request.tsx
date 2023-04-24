@@ -1,8 +1,9 @@
 import { stringify } from "qs";
 import { Static, TSchema } from "@sinclair/typebox";
 
-import { ModelId } from "./model";
+import { ModelId, PaginationParams } from "./model";
 import { MutableRefObject } from "react";
+import { QueryFunction, UseInfiniteQueryOptions } from "@tanstack/react-query";
 
 export type QueryParameters = Record<string, string | number | boolean>;
 
@@ -26,8 +27,6 @@ export async function request<TRequestBody, TResponseBody = TRequestBody>(
 ): Promise<TResponseBody> {
   const queryString = stringify(query);
   const uri = `${url}${!!queryString ? `?${queryString}` : ""}`;
-
-  console.log("request", { token });
 
   const resp = await fetch(uri, {
     method,
@@ -60,6 +59,19 @@ export function createSearchRequestFn<T extends TSchema>({
   token,
 }: RequestCreatorOptions) {
   return async function search(params?: QueryParameters) {
+    return request<Static<T>[]>(resourcePath, {
+      method: "get",
+      query: params,
+      token: token.current,
+    });
+  };
+}
+
+export function createPaginatedRequestFn<T extends TSchema>({
+  resourcePath,
+  token,
+}: RequestCreatorOptions) {
+  return async function paginated(params: PaginationParams) {
     return request<Static<T>[]>(resourcePath, {
       method: "get",
       query: params,
