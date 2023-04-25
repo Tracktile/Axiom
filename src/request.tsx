@@ -3,9 +3,11 @@ import { Static, TSchema } from "@sinclair/typebox";
 
 import { ModelId, PaginationParams } from "./model";
 import { MutableRefObject } from "react";
-import { QueryFunction, UseInfiniteQueryOptions } from "@tanstack/react-query";
 
-export type QueryParameters = Record<string, string | number | boolean>;
+export type QueryParameters = Record<
+  string,
+  string | number | boolean | undefined
+>;
 
 export interface APIRequestParams<T> {
   method?: string;
@@ -24,7 +26,7 @@ export async function request<TRequestBody, TResponseBody = TRequestBody>(
     body,
     token,
   }: APIRequestParams<TRequestBody> = {}
-): Promise<TResponseBody> {
+): Promise<[TResponseBody, PaginationParams & { total: number }]> {
   const queryString = stringify(query);
   const uri = `${url}${!!queryString ? `?${queryString}` : ""}`;
 
@@ -45,8 +47,28 @@ export async function request<TRequestBody, TResponseBody = TRequestBody>(
     throw new Error(message);
   }
 
-  const respBody = await resp.json();
-  return respBody as TResponseBody;
+  const responseHeaders: Record<string, string> = {};
+  for (const pair of resp.headers.entries()) {
+    const [name, value] = pair;
+    responseHeaders[name.toLowerCase()] = value;
+  }
+
+  const [offset, limit, total] = [
+    headers["X-Pagination-Offset".toLowerCase()],
+    headers["X-Pagination-Limit".toLowerCase()],
+    headers["X-Pagination-Total".toLowerCase()],
+  ];
+
+  const respBody = (await resp.json()) as TResponseBody;
+
+  return [
+    respBody,
+    {
+      offset: parseInt(offset, 10),
+      limit: parseInt(limit, 10),
+      total: parseInt(total, 10),
+    },
+  ];
 }
 
 export type RequestCreatorOptions = {
@@ -58,37 +80,38 @@ export function createSearchRequestFn<T extends TSchema>({
   resourcePath,
   token,
 }: RequestCreatorOptions) {
-  return async function search(params?: QueryParameters) {
-    return request<Static<T>[]>(resourcePath, {
+  return async function search({
+    offset = 0,
+    limit = 999,
+    orderBy,
+    ...query
+  }: PaginationParams & QueryParameters = {}) {
+    const [resp, { total }] = await request<Static<T>[]>(resourcePath, {
       method: "get",
-      query: params,
+      query,
       token: token.current,
+      headers: {
+        "X-Pagination-Offset": offset.toString(),
+        "X-Pagination-Limit": limit.toString(),
+        ...(!!orderBy ? { "X-Pagination-OrderBy": orderBy } : {}),
+      },
     });
-  };
-}
-
-export function createPaginatedRequestFn<T extends TSchema>({
-  resourcePath,
-  token,
-}: RequestCreatorOptions) {
-  return async function paginated(params: PaginationParams) {
-    return request<Static<T>[]>(resourcePath, {
-      method: "get",
-      query: params,
-      token: token.current,
-    });
+    return { results: resp, total };
   };
 }
 
 export function createGetRequestFn<T extends TSchema>({
   resourcePath,
   token,
+  ...options
 }: RequestCreatorOptions) {
   return async function get(id: ModelId) {
-    return request<Static<T>>(`${resourcePath}/${id}`, {
+    const [resp] = await request<Static<T>>(`${resourcePath}/${id}`, {
       method: "get",
       token: token.current,
+      ...options,
     });
+    return resp;
   };
 }
 
@@ -97,11 +120,12 @@ export function createCreateRequestFn<T extends TSchema>({
   token,
 }: RequestCreatorOptions) {
   return async function create(body: Static<T>) {
-    return request<Static<T>>(resourcePath, {
+    const [resp] = await request<Static<T>>(resourcePath, {
       method: "post",
       body,
       token: token.current,
     });
+    return resp;
   };
 }
 
@@ -109,25 +133,34 @@ export function createUpdateRequestFn<T extends TSchema>({
   resourcePath,
   idKey = "id",
   token,
+  ...options
 }: RequestCreatorOptions & { idKey: keyof Static<T> | "id" }) {
   return async function update(body: Static<T> & { id: typeof idKey }) {
-    return request<Static<T>>(`${resourcePath}/${body[idKey]}`, {
+    const [resp] = await request<Static<T>>(`${resourcePath}/${body[idKey]}`, {
       method: "put",
       body,
       token: token.current,
+      ...options,
     });
+    return resp;
   };
 }
 
 export function createRemoveRequestFn<T extends TSchema>({
   resourcePath,
   token,
+  ...options
 }: RequestCreatorOptions) {
   return async function remove(body: Static<T> & { id: ModelId }) {
-    return request<Static<T>, void>(`${resourcePath}/${body.id}`, {
-      method: "delete",
-      body,
-      token: token.current,
-    });
+    const [resp] = await request<Static<T>, void>(
+      `${resourcePath}/${body.id}`,
+      {
+        method: "delete",
+        body,
+        token: token.current,
+        ...options,
+      }
+    );
+    return resp;
   };
 }

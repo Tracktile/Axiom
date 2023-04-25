@@ -24,7 +24,11 @@ export function createApi<M extends Record<string, ModelFactory<any>>>({
   return Object.keys(models).reduce(
     (acc, key) => ({
       ...acc,
-      [key as keyof M]: models[key as keyof M]({ client, baseUrl, token }),
+      [key as keyof M]: models[key as keyof M]({
+        client,
+        baseUrl,
+        token,
+      }),
     }),
     {} as ModelMap<M>
   );
