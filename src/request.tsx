@@ -54,9 +54,9 @@ export async function request<TRequestBody, TResponseBody = TRequestBody>(
   }
 
   const [offset, limit, total] = [
-    headers["X-Pagination-Offset".toLowerCase()],
-    headers["X-Pagination-Limit".toLowerCase()],
-    headers["X-Pagination-Total".toLowerCase()],
+    responseHeaders["X-Pagination-Offset".toLowerCase()],
+    responseHeaders["X-Pagination-Limit".toLowerCase()],
+    responseHeaders["X-Pagination-Total".toLowerCase()],
   ];
 
   const respBody = (await resp.json()) as TResponseBody;
@@ -86,7 +86,7 @@ export function createSearchRequestFn<T extends TSchema>({
     orderBy,
     ...query
   }: PaginationParams & QueryParameters = {}) {
-    const [resp, { total }] = await request<Static<T>[]>(resourcePath, {
+    const [results, { total }] = await request<Static<T>[]>(resourcePath, {
       method: "get",
       query,
       token: token.current,
@@ -96,7 +96,7 @@ export function createSearchRequestFn<T extends TSchema>({
         ...(!!orderBy ? { "X-Pagination-OrderBy": orderBy } : {}),
       },
     });
-    return { results: resp, total };
+    return { results, total };
   };
 }
 

@@ -199,6 +199,7 @@ export function createApiModel<TModel extends TSchema>({
           return nextOffset;
         },
       });
+      console.log("search data", queryMethods.data);
       return {
         ...queryMethods,
         page: queryMethods.data?.pages.flatMap((page) => page.results) ?? [],
