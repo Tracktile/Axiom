@@ -2,6 +2,20 @@ import { TSchema } from "@sinclair/typebox";
 
 import { ModelFactory, ModelFactoryOptions } from "./model";
 
+export type SearchQueryField = {
+  name: string;
+  is?: string;
+  contains?: string;
+  isOneOf?: string[];
+};
+
+export type SearchQuery = {
+  fields?: SearchQueryField[];
+  offset?: number;
+  limit?: number;
+  orderBy?: string;
+};
+
 export type ModelFactoryMap<T extends ModelFactory<S>, S extends TSchema> = {
   [K in keyof T]: ModelFactory<S>;
 };

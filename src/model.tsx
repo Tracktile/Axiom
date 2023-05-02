@@ -1,4 +1,4 @@
-import { createRef, MutableRefObject, useState } from "react";
+import { createRef, MutableRefObject } from "react";
 import {
   QueryClient,
   useQuery,
@@ -7,11 +7,8 @@ import {
   UseInfiniteQueryResult,
   InfiniteData,
   UseMutationResult,
-  QueryKey,
   MutationOptions,
   QueryOptions,
-  UseQueryOptions,
-  DefinedUseQueryResult,
 } from "@tanstack/react-query";
 import { TSchema, Static } from "@sinclair/typebox";
 import {
@@ -26,8 +23,9 @@ import {
   createRemoveRequestFn,
   createSearchRequestFn,
   createUpdateRequestFn,
-  QueryParameters,
 } from "./request";
+
+import { SearchQuery } from "./api";
 
 export type ModelId = string | number;
 
@@ -61,11 +59,7 @@ export class Model<TModel extends TSchema> {
     id: ModelId,
     options?: QueryOptions<Static<TModel>>
   ) => UseQueryResult<Static<TModel>, unknown>;
-  search!: ({
-    offset,
-    limit,
-    orderBy,
-  }?: PaginationParams) => UseInfiniteQueryResult<
+  search!: ({ offset, limit, orderBy }?: SearchQuery) => UseInfiniteQueryResult<
     InfiniteData<{
       results: Static<TModel, []>[];
       total: number;
@@ -100,6 +94,31 @@ interface CreateApiModelOptions<Schema extends TSchema> {
   idKey?: keyof Static<Schema> | "id";
 }
 
+const parseSearchQuery = (fields: Required<SearchQuery>["fields"]) =>
+  fields.reduce((acc, { name, is, isOneOf, contains }) => {
+    if (typeof is !== "undefined") {
+      return {
+        ...acc,
+        [name]: is,
+      };
+    }
+    if (typeof isOneOf !== "undefined") {
+      return {
+        ...acc,
+        [name]: isOneOf.join(","),
+      };
+    }
+
+    if (typeof contains !== "undefined") {
+      return {
+        ...acc,
+        [name]: `%${contains}%`,
+      };
+    }
+
+    return acc;
+  }, {});
+
 const buildResourcePath = (baseUrl: string, resource: string) => {
   const cleanBaseUrl = baseUrl.endsWith("/")
     ? baseUrl.substr(0, baseUrl.length - 1)
@@ -122,9 +141,7 @@ export function createApiModel<TModel extends TSchema>({
     token = createRef<string>(),
   }: ModelFactoryOptions): Model<TModel> => {
     const modelKeys = {
-      search: (
-        params?: Record<string, string | number | boolean | undefined>
-      ) => [name, ...(params ? [params] : [])],
+      search: (params: SearchQuery = {}) => [name, ...(params ? [params] : [])],
       get: (id: ModelId) => [name, id],
     };
 
@@ -175,23 +192,25 @@ export function createApiModel<TModel extends TSchema>({
       offset = 0,
       limit = 100,
       orderBy,
-    }: PaginationParams = {}) => {
+      fields = [],
+    }: SearchQuery = {}) => {
       const fn = createSearchRequestFn<TModel>({
         resourcePath,
         token,
       });
       const queryMethods = useInfiniteQuery({
-        queryKey: modelKeys.search({ offset, limit, orderBy }),
+        queryKey: modelKeys.search({ offset, limit, orderBy, fields }),
         queryFn: async () => {
           const { results, total } = await fn({
             limit,
             offset,
             orderBy,
+            ...parseSearchQuery(fields),
           });
           return { results, total, offset, limit };
         },
         defaultPageParam: 0,
-        getNextPageParam: ({ results, total, offset, limit }, pages) => {
+        getNextPageParam: ({ total, offset, limit }, pages) => {
           const nextOffset = offset + limit;
           if (nextOffset >= total) {
             return undefined;
@@ -199,7 +218,6 @@ export function createApiModel<TModel extends TSchema>({
           return nextOffset;
         },
       });
-      console.log("search data", queryMethods.data);
       return {
         ...queryMethods,
         page: queryMethods.data?.pages.flatMap((page) => page.results) ?? [],
