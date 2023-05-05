@@ -47,7 +47,6 @@ export class Model<TModel extends TSchema> {
       | undefined
   ) => UseMutationResult<Static<TModel>, unknown, Static<TModel>, unknown>;
   update!: (
-    id: string | number,
     options?:
       | MutationOptions<Static<TModel>, unknown, Static<TModel>, unknown>
       | undefined
@@ -59,7 +58,17 @@ export class Model<TModel extends TSchema> {
     id: ModelId,
     options?: QueryOptions<Static<TModel>>
   ) => UseQueryResult<Static<TModel>, unknown>;
-  search!: ({ offset, limit, orderBy }?: SearchQuery) => UseInfiniteQueryResult<
+  all!: () => UseQueryResult<Static<TModel, []>[], Error>;
+  search!: (query?: SearchQuery) => UseQueryResult<
+    {
+      results: Static<TModel, []>[];
+      total: number;
+      offset: number;
+      limit: number;
+    },
+    Error
+  >;
+  infinite!: (query?: SearchQuery) => UseInfiniteQueryResult<
     InfiniteData<{
       results: Static<TModel, []>[];
       total: number;
@@ -67,10 +76,7 @@ export class Model<TModel extends TSchema> {
       limit: number;
     }>,
     Error
-  > & {
-    total: number;
-    page: Static<TModel>[];
-  };
+  >;
   invalidateOne!: (id: ModelId) => Promise<void>;
   invalidateAll!: () => Promise<void>;
   read!: (id: ModelId) => TModel | undefined;
@@ -188,17 +194,58 @@ export function createApiModel<TModel extends TSchema>({
       });
     };
 
-    const searchQuery = ({
+    const allQuery = () => {
+      const fn = createSearchRequestFn<TModel>({
+        resourcePath,
+        token,
+      });
+      return useQuery({
+        placeholderData: (previousData) => previousData,
+        queryKey: modelKeys.search({}),
+        queryFn: async () => {
+          const { results } = await fn();
+          return results;
+        },
+      });
+    };
+
+    const paginatedQuery = ({
       offset = 0,
-      limit = 100,
-      orderBy,
+      limit = 99,
       fields = [],
+      orderBy,
     }: SearchQuery = {}) => {
       const fn = createSearchRequestFn<TModel>({
         resourcePath,
         token,
       });
-      const queryMethods = useInfiniteQuery({
+      return useQuery({
+        placeholderData: (previousData) => previousData,
+        queryKey: modelKeys.search({ offset, limit, orderBy, fields }),
+        queryFn: async () => {
+          const { results, total } = await fn({
+            limit,
+            offset,
+            orderBy,
+            ...parseSearchQuery(fields),
+          });
+          return { results, total, offset, limit };
+        },
+      });
+    };
+
+    const infiniteQuery = ({
+      offset = 0,
+      orderBy,
+      fields = [],
+    }: SearchQuery = {}) => {
+      const limit = 99;
+      const fn = createSearchRequestFn<TModel>({
+        resourcePath,
+        token,
+      });
+      return useInfiniteQuery({
+        placeholderData: (previousData) => previousData,
         queryKey: modelKeys.search({ offset, limit, orderBy, fields }),
         queryFn: async () => {
           const { results, total } = await fn({
@@ -218,20 +265,17 @@ export function createApiModel<TModel extends TSchema>({
           return nextOffset;
         },
       });
-      return {
-        ...queryMethods,
-        page: queryMethods.data?.pages.flatMap((page) => page.results) ?? [],
-        total: queryMethods.data?.pages[0]?.total ?? 0,
-      };
     };
 
-    const model: Model<TModel> = new Model({
+    const model = new Model({
       schema: schema,
       create: createMutation,
       update: updateMutation,
       remove: removeMutation,
       get: itemQuery,
-      search: searchQuery,
+      all: allQuery,
+      search: paginatedQuery,
+      infinite: infiniteQuery,
       invalidateOne: (id: ModelId) =>
         client.invalidateQueries({ queryKey: modelKeys.get(id) }),
       invalidateAll: () =>
@@ -240,6 +284,8 @@ export function createApiModel<TModel extends TSchema>({
       readAll: () => client.getQueryData<TModel[]>(modelKeys.search()),
       readOneFromAll: (id: ModelId) => {
         const all = client.getQueryData<TModel[]>(modelKeys.search()) ?? [];
+        console.log("readOneFromAll", [modelKeys.search(), all]);
+        console.log("ALL LENGTYH", all.length);
         return all.find((item) => item.id === id);
       },
     });

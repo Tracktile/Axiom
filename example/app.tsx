@@ -12,7 +12,7 @@ const token = "TOKEN";
 
 function Users() {
   const { User } = useApi();
-  const { data: users = [], isLoading, refetch } = User.search();
+  const { page: users = [], isLoading, refetch } = User.search();
   const { mutate: createUser } = User.create();
 
   const handleAddUser = () =>

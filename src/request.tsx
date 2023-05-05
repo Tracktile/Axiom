@@ -53,6 +53,8 @@ export async function request<TRequestBody, TResponseBody = TRequestBody>(
     responseHeaders[name.toLowerCase()] = value;
   }
 
+  console.log("responseHeaders", responseHeaders);
+
   const [offset, limit, total] = [
     responseHeaders["X-Pagination-Offset".toLowerCase()],
     responseHeaders["X-Pagination-Limit".toLowerCase()],
