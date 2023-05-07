@@ -27,7 +27,13 @@ export async function request<TRequestBody, TResponseBody = TRequestBody>(
     token,
   }: APIRequestParams<TRequestBody> = {}
 ): Promise<[TResponseBody, PaginationParams & { total: number }]> {
-  const queryString = stringify(query);
+  const cleanedQuery = Object.entries(query).reduce((acc, [key, val]) => {
+    if (!val) {
+      return acc;
+    }
+    return { ...acc, [key]: val };
+  }, {});
+  const queryString = stringify(cleanedQuery);
   const uri = `${url}${!!queryString ? `?${queryString}` : ""}`;
 
   const resp = await fetch(uri, {
