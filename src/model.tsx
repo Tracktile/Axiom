@@ -284,8 +284,6 @@ export function createApiModel<TModel extends TSchema>({
       readAll: () => client.getQueryData<TModel[]>(modelKeys.search()),
       readOneFromAll: (id: ModelId) => {
         const all = client.getQueryData<TModel[]>(modelKeys.search()) ?? [];
-        console.log("readOneFromAll", [modelKeys.search(), all]);
-        console.log("ALL LENGTYH", all.length);
         return all.find((item) => item.id === id);
       },
     });
