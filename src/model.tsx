@@ -18,11 +18,13 @@ import {
 } from "./mutation";
 
 import {
+  QueryParameters,
   createCreateRequestFn,
   createGetRequestFn,
   createRemoveRequestFn,
   createSearchRequestFn,
   createUpdateRequestFn,
+  createCallRequestFn,
 } from "./request";
 
 import { SearchQuery } from "./api";
@@ -77,6 +79,10 @@ export class Model<TModel extends TSchema> {
     }>,
     Error
   >;
+  call!: (
+    params: QueryParameters,
+    options?: QueryOptions<Static<TModel>>
+  ) => UseQueryResult<Static<TModel, []>, Error>;
   invalidateOne!: (id: ModelId) => Promise<void>;
   invalidateAll!: () => Promise<void>;
   read!: (id: ModelId) => TModel | undefined;
@@ -184,6 +190,22 @@ export function createApiModel<TModel extends TSchema>({
       itemIndexCacheKey: modelKeys.search,
     });
 
+    const callQuery = (
+      params: QueryParameters,
+      options?: QueryOptions<Static<TModel>>
+    ) => {
+      const fn = createCallRequestFn<TModel>({
+        resourcePath,
+        token,
+      });
+      return useQuery({
+        queryKey: modelKeys.search(params),
+        queryFn: () => fn(params),
+        initialData: [],
+        ...options,
+      });
+    };
+
     const itemQuery = (id: ModelId, options?: QueryOptions<Static<TModel>>) => {
       const fn = createGetRequestFn<TModel>({ resourcePath, token });
       return useQuery<Static<TModel>>({
@@ -273,6 +295,7 @@ export function createApiModel<TModel extends TSchema>({
       update: updateMutation,
       remove: removeMutation,
       get: itemQuery,
+      call: callQuery,
       all: allQuery,
       search: paginatedQuery,
       infinite: infiniteQuery,

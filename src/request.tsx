@@ -106,6 +106,19 @@ export function createSearchRequestFn<T extends TSchema>({
   };
 }
 
+export function createCallRequestFn<T extends TSchema>({
+  resourcePath,
+  token,
+}: RequestCreatorOptions) {
+  return async function call(params: QueryParameters) {
+    const [resp] = await request<unknown, Static<T>>(resourcePath, {
+      token: token.current,
+      query: params,
+    });
+    return resp;
+  };
+}
+
 export function createGetRequestFn<T extends TSchema>({
   resourcePath,
   token,
