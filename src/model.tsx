@@ -10,6 +10,7 @@ import {
   MutationOptions,
   QueryOptions,
   UseQueryOptions,
+  useQueryClient,
 } from "@tanstack/react-query";
 import { TSchema, Static } from "@sinclair/typebox";
 import {
@@ -218,6 +219,7 @@ export function createApiModel<TModel extends TSchema>({
     };
 
     const allQuery = () => {
+      const queryClient = useQueryClient();
       const fn = createSearchRequestFn<TModel>({
         resourcePath,
         token,
@@ -227,6 +229,12 @@ export function createApiModel<TModel extends TSchema>({
         queryKey: modelKeys.search({}),
         queryFn: async () => {
           const { results } = await fn();
+          results.forEach((item) => {
+            queryClient.setQueryData(
+              modelKeys.get(item[idKey] as ModelId),
+              item
+            );
+          });
           return results;
         },
       });
@@ -238,6 +246,7 @@ export function createApiModel<TModel extends TSchema>({
       fields = [],
       orderBy,
     }: SearchQuery = {}) => {
+      const queryClient = useQueryClient();
       const fn = createSearchRequestFn<TModel>({
         resourcePath,
         token,
@@ -252,6 +261,12 @@ export function createApiModel<TModel extends TSchema>({
             orderBy,
             ...parseSearchQuery(fields),
           });
+          results.forEach((item) => {
+            queryClient.setQueryData(
+              modelKeys.get(item[idKey] as ModelId),
+              item
+            );
+          });
           return { results, total, offset, limit };
         },
       });
@@ -263,6 +278,7 @@ export function createApiModel<TModel extends TSchema>({
       fields = [],
     }: SearchQuery = {}) => {
       const limit = 99;
+      const queryClient = useQueryClient();
       const fn = createSearchRequestFn<TModel>({
         resourcePath,
         token,
@@ -276,6 +292,12 @@ export function createApiModel<TModel extends TSchema>({
             offset,
             orderBy,
             ...parseSearchQuery(fields),
+          });
+          results.forEach((item) => {
+            queryClient.setQueryData(
+              modelKeys.get(item[idKey] as ModelId),
+              item
+            );
           });
           return { results, total, offset, limit };
         },
