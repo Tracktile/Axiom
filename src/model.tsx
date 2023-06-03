@@ -9,6 +9,7 @@ import {
   UseMutationResult,
   MutationOptions,
   QueryOptions,
+  UseQueryOptions,
 } from "@tanstack/react-query";
 import { TSchema, Static } from "@sinclair/typebox";
 import {
@@ -103,7 +104,7 @@ interface CreateApiModelOptions<Schema extends TSchema> {
   name: string;
   resource: string;
   schema: Schema;
-  idKey?: keyof Static<Schema> | "id";
+  idKey?: keyof Static<Schema>;
 }
 
 const parseSearchQuery = (fields: Required<SearchQuery>["fields"]) =>
@@ -145,7 +146,7 @@ export function createApiModel<TModel extends TSchema>({
   name,
   resource,
   schema,
-  idKey = "id",
+  idKey = "id" as keyof Static<TModel>,
 }: CreateApiModelOptions<TModel>): ModelFactory<TModel> & { schema: TModel } {
   const factoryFn = ({
     client,
