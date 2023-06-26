@@ -11,6 +11,7 @@ import {
   QueryOptions,
   UseQueryOptions,
   useQueryClient,
+  useMutation,
 } from "@tanstack/react-query";
 import { TSchema, Static } from "@sinclair/typebox";
 import {
@@ -27,6 +28,7 @@ import {
   createSearchRequestFn,
   createUpdateRequestFn,
   createCallRequestFn,
+  request,
 } from "./request";
 
 import { SearchQuery } from "./api";
@@ -39,11 +41,11 @@ export type ModelFactoryOptions = {
   token?: MutableRefObject<string | null>;
 };
 
-export type ModelFactory<T extends TSchema> = (
+export type ModelFactory<T extends TSchema, TParams extends TSchema = T> = (
   options: ModelFactoryOptions
-) => Model<T>;
+) => Model<T, TParams>;
 
-export class Model<TModel extends TSchema> {
+export class Model<TModel extends TSchema, TParams extends TSchema = TModel> {
   schema!: TModel;
   create!: (
     options?:
@@ -85,6 +87,7 @@ export class Model<TModel extends TSchema> {
     params: QueryParameters,
     options?: QueryOptions<Static<TModel>>
   ) => UseQueryResult<Static<TModel, []>, Error>;
+  run!: (params: Static<TParams>) => Promise<Static<TModel, []>>;
   invalidateOne!: (id: ModelId) => Promise<void>;
   invalidateAll!: () => Promise<void>;
   read!: (id: ModelId) => TModel | undefined;
@@ -101,10 +104,14 @@ export type PaginationParams = {
   orderBy?: string;
 };
 
-interface CreateApiModelOptions<Schema extends TSchema> {
+interface CreateApiModelOptions<
+  Schema extends TSchema,
+  TParams = Static<Schema>
+> {
   name: string;
   resource: string;
   schema: Schema;
+  params?: TParams;
   idKey?: keyof Static<Schema>;
 }
 
@@ -133,7 +140,7 @@ const parseSearchQuery = (fields: Required<SearchQuery>["fields"]) =>
     return acc;
   }, {});
 
-const buildResourcePath = (baseUrl: string, resource: string) => {
+function buildResourcePath<TParams extends TSchema>(baseUrl: string, resource: string, params?: Static<TParams>) {
   const cleanBaseUrl = baseUrl.endsWith("/")
     ? baseUrl.substr(0, baseUrl.length - 1)
     : baseUrl;
@@ -143,23 +150,29 @@ const buildResourcePath = (baseUrl: string, resource: string) => {
   return `${cleanBaseUrl}/${cleanResource}`;
 };
 
-export function createApiModel<TModel extends TSchema>({
+export function createApiModel<
+  TModel extends TSchema,
+  TParams extends TSchema = TModel
+>({
   name,
   resource,
   schema,
+  params,
   idKey = "id" as keyof Static<TModel>,
-}: CreateApiModelOptions<TModel>): ModelFactory<TModel> & { schema: TModel } {
+}: CreateApiModelOptions<TModel, TParams>): ModelFactory<TModel, TParams> & {
+  schema: TModel;
+} {
   const factoryFn = ({
     client,
     baseUrl,
     token = createRef<string>(),
-  }: ModelFactoryOptions): Model<TModel> => {
+  }: ModelFactoryOptions): Model<TModel, TParams> => {
     const modelKeys = {
       search: (params: SearchQuery = {}) => [name, ...(params ? [params] : [])],
       get: (id: ModelId) => [name, id],
     };
 
-    const resourcePath = buildResourcePath(baseUrl, resource);
+    const resourcePath = buildResourcePath<TParams>(baseUrl, resource);
 
     const createMutation = createCreateMutation<TModel>(name, {
       client,
@@ -312,13 +325,35 @@ export function createApiModel<TModel extends TSchema>({
       });
     };
 
-    const model = new Model({
+    async function run(params: Static<TParams>): Promise<Static<TModel, []>> {
+      const replaced = resourcePath.split('/').map((part) => {
+        if (part.startsWith(':')) {
+          const key = part.substr(1);
+
+          if(!(key in Object(params))) {
+            throw new Error(`Missing parameter ${key} for resource ${resourcePath}`);
+          }
+
+          return Object(params)[key];
+        }
+        return part;
+      }).join('/');
+      const [resp] = await request<Static<TParams>, TModel[]>(replaced, {
+        method: "post",
+        token: token.current,
+        body: params,
+      });
+      return resp;
+    }
+
+    const model = new Model<TModel, TParams>({
       schema: schema,
       create: createMutation,
       update: updateMutation,
       remove: removeMutation,
       get: itemQuery,
       call: callQuery,
+      run,
       all: allQuery,
       search: paginatedQuery,
       infinite: infiniteQuery,
