@@ -9,7 +9,7 @@ import { ModelId } from "./model";
 
 type TContext<TData = undefined> = { previous?: TData };
 
-function replaceInWithBy<TData>(
+export function replaceInWithBy<TData>(
   data: TData[],
   newItem: TData,
   replaceBy: keyof TData
@@ -182,7 +182,7 @@ export function createUpdateMutation<T extends TSchema>(
 interface DeletePersistMutationOptions<T extends TSchema> {
   client: QueryClient;
   idKey?: keyof Static<T> | "id";
-  deleteFn: (item: Static<T> & { id: ModelId }) => Promise<void>;
+  deleteFn: (item: Static<T> & { id: ModelId }) => Promise<Static<T>>;
   itemCacheKey: (id: ModelId) => QueryKey;
   itemIndexCacheKey: () => QueryKey;
 }
@@ -202,6 +202,7 @@ export function createDeleteMutation<T extends TSchema>(
     retry: false,
     mutationFn: (item: Static<T> & { id: ModelId }) => deleteFn(item),
     onMutate: async (item: Static<T>): Promise<TContext<Static<T>>> => {
+      console.log("deleting item", item);
       await client.cancelQueries({
         queryKey: itemCacheKey(
           (item as Record<string, ModelId>)[idKey] as ModelId
@@ -249,5 +250,11 @@ export function createDeleteMutation<T extends TSchema>(
     useMutation<Static<T>, unknown, Static<T>>({
       mutationKey: [mutationName],
       ...options,
+      onSuccess: (data, variables, context) => {
+        if (options?.onSuccess) {
+          options.onSuccess(data, variables, context);
+        }
+        client.invalidateQueries({ queryKey: itemIndexCacheKey() });
+      },
     });
 }

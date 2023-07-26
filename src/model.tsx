@@ -7,95 +7,445 @@ import {
   UseInfiniteQueryResult,
   InfiniteData,
   UseMutationResult,
-  MutationOptions,
-  QueryOptions,
-  UseQueryOptions,
-  useQueryClient,
   useMutation,
+  UseMutationOptions,
 } from "@tanstack/react-query";
 import { TSchema, Static } from "@sinclair/typebox";
-import {
-  createCreateMutation,
-  createUpdateMutation,
-  createDeleteMutation,
-} from "./mutation";
 
 import {
-  QueryParameters,
   createCreateRequestFn,
   createGetRequestFn,
   createRemoveRequestFn,
   createSearchRequestFn,
   createUpdateRequestFn,
-  createCallRequestFn,
-  request,
 } from "./request";
 
 import { SearchQuery } from "./api";
 
-export type ModelId = string | number;
-
-export type ModelFactoryOptions = {
-  client: QueryClient;
-  baseUrl: string;
-  token?: MutableRefObject<string | null>;
+type AxiomQueryOptions = {
+  offset?: number;
+  limit?: number;
+  orderBy?: string;
+  fields?: SearchQuery["fields"];
 };
 
-export type ModelFactory<T extends TSchema, TParams extends TSchema = T> = (
-  options: ModelFactoryOptions
-) => Model<T, TParams>;
+type AxiomModelQueryOptions<TModel extends TSchema> = UseInfiniteQueryResult<
+  InfiniteData<{
+    results: Static<TModel>[];
+    total: number;
+    offset: number;
+    limit: number;
+  }>,
+  Error
+>;
 
-export class Model<TModel extends TSchema, TParams extends TSchema = TModel> {
-  schema!: TModel;
-  create!: (
-    options?:
-      | MutationOptions<Static<TModel>, unknown, Static<TModel>, unknown>
-      | undefined
-  ) => UseMutationResult<Static<TModel>, unknown, Static<TModel>, unknown>;
-  update!: (
-    options?:
-      | MutationOptions<Static<TModel>, unknown, Static<TModel>, unknown>
-      | undefined
-  ) => UseMutationResult<Static<TModel>, unknown, Static<TModel>, unknown>;
-  remove!: (
-    options?: MutationOptions<Static<TModel>, unknown, Static<TModel>>
-  ) => UseMutationResult<Static<TModel>, unknown, Static<TModel>, unknown>;
-  get!: (
+type AxiomModelQueryResult<TModel extends TSchema> = UseQueryResult<
+  Static<TModel>,
+  unknown
+>;
+
+type AxiomModelMutationOptions<
+  TModal extends TSchema,
+  TArgs extends TSchema,
+> = UseMutationOptions<Static<TModal>, unknown, Static<TArgs>, unknown>;
+
+type AxiomModelMutationResult<
+  TModal extends TSchema,
+  TArgs extends TSchema,
+> = UseMutationResult<Static<TModal>, unknown, Static<TArgs>, unknown>;
+
+export type ModelId = string | number;
+
+type TContext<TData = undefined> = { previous?: TData };
+
+interface IModel<
+  TResourceParams extends TSchema,
+  TQueryParams extends TSchema,
+  TModel extends TSchema,
+  TCreate extends TSchema,
+  TUpdate extends TSchema,
+> {
+  schemas: {
+    create: TCreate;
+    update: TUpdate;
+    resource: TResourceParams;
+    query: TQueryParams;
+    model: TModel;
+  };
+  get: (
     id: ModelId,
-    options?: QueryOptions<Static<TModel>>
-  ) => UseQueryResult<Static<TModel>, unknown>;
-  all!: () => UseQueryResult<Static<TModel, []>[], Error>;
-  search!: (query?: SearchQuery) => UseQueryResult<
-    {
-      results: Static<TModel, []>[];
-      total: number;
-      offset: number;
-      limit: number;
-    },
-    Error
-  >;
-  infinite!: (query?: SearchQuery) => UseInfiniteQueryResult<
-    InfiniteData<{
-      results: Static<TModel, []>[];
-      total: number;
-      offset: number;
-      limit: number;
-    }>,
-    Error
-  >;
-  call!: (
-    params: QueryParameters,
-    options?: QueryOptions<Static<TModel>>
-  ) => UseQueryResult<Static<TModel, []>, Error>;
-  run!: (params: Static<TParams>) => Promise<Static<TModel, []>>;
-  invalidateOne!: (id: ModelId) => Promise<void>;
-  invalidateAll!: () => Promise<void>;
-  read!: (id: ModelId) => TModel | undefined;
-  readAll!: () => TModel[] | undefined;
-  readOneFromAll!: (id: ModelId) => TModel | undefined;
-  constructor(model: Model<TModel>) {
-    Object.assign(this, model);
+    options: AxiomModelQueryOptions<TModel>
+  ) => AxiomModelQueryResult<TModel>;
+  create: (
+    options: AxiomModelMutationOptions<TModel, TCreate>
+  ) => AxiomModelMutationResult<TModel, TCreate>;
+  update: (
+    id: ModelId,
+    options: AxiomModelMutationOptions<TModel, TUpdate>
+  ) => AxiomModelMutationResult<TModel, TUpdate>;
+  remove: (
+    id: ModelId,
+    options: AxiomModelMutationOptions<TModel, TModel>
+  ) => AxiomModelMutationResult<TModel, TModel>;
+  invalidate: () => void;
+  invalidateById: (id: ModelId) => void;
+  invalidateWhere: (fn: (model: TModel) => boolean) => void;
+}
+
+interface ModelBindOptions {
+  client: QueryClient;
+  baseUrl: string;
+  token: MutableRefObject<string | null>;
+}
+
+export interface ModelOptions<
+  TResourceParams extends TSchema,
+  TQueryParams extends TSchema,
+  TModel extends TSchema,
+  TCreate extends TSchema,
+  TUpdate extends TSchema,
+> {
+  name: string;
+  resource: string;
+  params: TResourceParams;
+  query: TQueryParams;
+  model: TModel;
+  create: TCreate;
+  update: TUpdate;
+  idKey: keyof Static<TModel>;
+}
+
+export class Model<
+  TResourceParams extends TSchema,
+  TQueryParams extends TSchema,
+  TModel extends TSchema,
+  TCreate extends TSchema,
+  TUpdate extends TSchema,
+> implements IModel<TResourceParams, TQueryParams, TModel, TCreate, TUpdate>
+{
+  name: string;
+  resource: string;
+  idKey: keyof Static<TModel>;
+  schemas: {
+    create: TCreate;
+    update: TUpdate;
+    resource: TResourceParams;
+    query: TQueryParams;
+    model: TModel;
+  };
+  client: QueryClient = new QueryClient();
+  baseUrl: string;
+  token: MutableRefObject<string | null>;
+
+  constructor(
+    options: ModelOptions<
+      TResourceParams,
+      TQueryParams,
+      TModel,
+      TCreate,
+      TUpdate
+    >
+  ) {
+    this.name = options.name;
+    this.resource = options.resource;
+    this.idKey = options.idKey ?? ("id" as keyof Static<TModel>);
+    this.token = createRef<string | null>();
+    this.schemas = {
+      create: options.create,
+      update: options.update,
+      resource: options.params,
+      query: options.query,
+      model: options.model,
+    };
+    this.baseUrl = "";
+    this.client = new QueryClient();
   }
+
+  modelKeys = {
+    search: (params: SearchQuery = {}) => [
+      this.name,
+      ...(params ? [params] : []),
+    ],
+    get: (id: ModelId) => [this.name, id],
+    create: () => [this.name, "create"],
+    update: (id?: ModelId) => [this.name, id, "update"],
+    remove: (id?: ModelId) => [this.name, id, "remove"],
+  };
+
+  private bindCreateMutation() {
+    this.client.setMutationDefaults(this.modelKeys.create(), {
+      mutationFn: (item: Static<TCreate>) => {
+        return createCreateRequestFn<TModel>({
+          resourcePath: buildResourcePath(this.baseUrl, this.resource),
+          token: this.token,
+        })(item);
+      },
+      onMutate: async (
+        item: Static<TModel>
+      ): Promise<TContext<Static<TModel>>> => {
+        await this.client.cancelQueries({
+          queryKey: this.modelKeys.get(
+            (item as Record<string, ModelId>)[this.idKey] as ModelId
+          ),
+        });
+        const previous = this.client.getQueryData<Static<TModel>>(
+          this.modelKeys.get(
+            (item as Record<string, ModelId>)[this.idKey] as ModelId
+          )
+        );
+        this.client.setQueryData(
+          this.modelKeys.get(
+            (item as Record<string, ModelId>)[this.idKey] as ModelId
+          ),
+          item
+        );
+        this.client.setQueryData<Static<TModel>>(
+          this.modelKeys.get(item[this.idKey] as ModelId),
+          () => item
+        );
+        return { previous };
+      },
+      onSuccess: (item: Static<TModel>) => {
+        this.client.invalidateQueries({
+          queryKey: this.modelKeys.get(item[this.idKey] as ModelId),
+        });
+      },
+      onError: (
+        _err: Error,
+        item: Static<TModel>,
+        context?: TContext<Static<TModel>>
+      ) => {
+        if (!!context?.previous) {
+          this.client.setQueryData(
+            this.modelKeys.get(
+              (item as Record<string, ModelId>)[this.idKey] as ModelId
+            ),
+            context.previous
+          );
+          this.client.setQueryData<Static<TModel>>(
+            this.modelKeys.get(item[this.idKey] as ModelId),
+            () => undefined
+          );
+        }
+      },
+    });
+  }
+
+  bindUpdateMutation() {
+    this.client.setMutationDefaults(this.modelKeys.update(), {
+      mutationFn: (
+        item: Static<TModel> & { id: "id" | keyof Static<TModel, []> }
+      ) => {
+        return createUpdateRequestFn<TModel>({
+          resourcePath: buildResourcePath(this.baseUrl, this.resource),
+          idKey: this.idKey,
+          token: this.token,
+        })(item);
+      },
+      onMutate: async (
+        item: Static<TModel>
+      ): Promise<TContext<Static<TModel>>> => {
+        await this.client.cancelQueries({
+          queryKey: this.modelKeys.get(
+            (item as Record<string, ModelId>)[this.idKey] as ModelId
+          ),
+        });
+        const previous = this.client.getQueryData<Static<TModel>>(
+          this.modelKeys.get(
+            (item as Record<string, ModelId>)[this.idKey] as ModelId
+          )
+        );
+        this.client.setQueryData(
+          this.modelKeys.get(
+            (item as Record<string, ModelId>)[this.idKey] as ModelId
+          ),
+          item
+        );
+        return { previous };
+      },
+      onSuccess: () => {},
+      onError: (
+        _err: Error,
+        item: Static<TModel>,
+        context?: TContext<Static<TModel>>
+      ) => {
+        if (!!context?.previous) {
+          this.client.setQueryData(
+            this.modelKeys.get(
+              (item as Record<string, ModelId>)[this.idKey] as ModelId
+            ),
+            context.previous
+          );
+        }
+      },
+    });
+  }
+
+  bindRemoveMutation() {
+    this.client.setMutationDefaults(this.modelKeys.remove(), {
+      retry: false,
+      mutationFn: (item: Static<TModel> & { id: ModelId }) =>
+        createRemoveRequestFn({
+          resourcePath: buildResourcePath(this.baseUrl, this.resource),
+          token: this.token,
+        })(item),
+      onMutate: async (
+        item: Static<TModel>
+      ): Promise<TContext<Static<TModel>>> => {
+        console.log("deleting item", item);
+        await this.client.cancelQueries({
+          queryKey: this.modelKeys.remove(
+            (item as Record<string, ModelId>)[this.idKey] as ModelId
+          ),
+        });
+
+        const previous = this.client.getQueryData<Static<TModel>>(
+          this.modelKeys.get(
+            (item as Record<string, ModelId>)[this.idKey] as ModelId
+          )
+        );
+        this.client.setQueryData(
+          this.modelKeys.get(
+            (item as Record<string, ModelId>)[this.idKey] as ModelId
+          ),
+          null
+        );
+        return { previous };
+      },
+      onSuccess: () => {},
+      onError: (
+        _err: Error,
+        item: Static<TModel>,
+        context?: TContext<Static<TModel>>
+      ) => {
+        if (typeof context?.previous !== "undefined") {
+          this.client.setQueryData(
+            this.modelKeys.get(
+              (item as Record<string, ModelId>)[this.idKey] as ModelId
+            ),
+            context.previous
+          );
+        }
+      },
+    });
+  }
+
+  bind({ client, baseUrl, token }: ModelBindOptions) {
+    this.client = client;
+    this.baseUrl = baseUrl;
+    this.token = token;
+    this.bindCreateMutation();
+    this.bindUpdateMutation();
+    this.bindRemoveMutation();
+    return this;
+  }
+
+  get(id: ModelId, options: Partial<AxiomModelQueryOptions<TModel>> = {}) {
+    return useQuery<Static<TModel>>({
+      queryKey: this.modelKeys.get(id),
+      enabled: !!id,
+      queryFn: () =>
+        createGetRequestFn<TModel>({
+          resourcePath: buildResourcePath(this.baseUrl, this.resource),
+          token: this.token,
+        })(id),
+      initialData: [] as Static<TModel>[] & undefined,
+      ...options,
+    });
+  }
+
+  query(
+    { offset = 0, limit = 99, orderBy, fields = [] }: AxiomQueryOptions = {},
+    options?: AxiomModelQueryOptions<TModel>
+  ) {
+    const fn = createSearchRequestFn<TModel>({
+      resourcePath: buildResourcePath(this.baseUrl, this.resource),
+      token: this.token,
+    });
+    const {
+      data,
+      ...queryResult
+    }: UseInfiniteQueryResult<
+      InfiniteData<{
+        results: Static<TModel>[];
+        total: number;
+        offset: number;
+        limit: number;
+      }>
+    > = useInfiniteQuery<{
+      results: Static<TModel>[];
+      total: number;
+      offset: number;
+      limit: number;
+    }>({
+      initialData: () => ({
+        pageParams: [],
+        pages: [],
+      }),
+      placeholderData: (previousData) => previousData,
+      queryKey: this.modelKeys.search({ offset, limit, orderBy, fields }),
+      queryFn: async () => {
+        const { results, total } = await fn({
+          limit,
+          offset,
+          orderBy,
+          ...parseSearchQuery(fields),
+        });
+        results.forEach((item) => {
+          this.client.setQueryData(
+            this.modelKeys.get(item[this.idKey] as ModelId),
+            item
+          );
+        });
+        return { results, total, offset, limit };
+      },
+      defaultPageParam: { offset: 0 },
+      getNextPageParam: (lastPageParams, pages) => {
+        const { offset = 0, limit = 99, total = 0 } = lastPageParams ?? {};
+        const nextOffset = offset + limit;
+        if (nextOffset >= total) {
+          return undefined;
+        }
+        return nextOffset;
+      },
+      ...options,
+    });
+    return {
+      data: data?.pages.map((page) => page.results).flat() ?? [],
+      pages: data?.pages,
+      ...queryResult,
+    };
+  }
+
+  create(options: AxiomModelMutationOptions<TModel, TCreate> = {}) {
+    return useMutation<Static<TModel>, unknown, Static<TCreate>>({
+      mutationKey: this.modelKeys.create(),
+      ...options,
+    });
+  }
+
+  update(
+    id: ModelId,
+    options: AxiomModelMutationOptions<TModel, TUpdate> = {}
+  ) {
+    return useMutation<Static<TModel>, unknown, Static<TUpdate>>({
+      mutationKey: this.modelKeys.update(),
+      ...options,
+    });
+  }
+
+  remove(id: ModelId, options: AxiomModelMutationOptions<TModel, TModel> = {}) {
+    return useMutation<Static<TModel>, unknown, Static<TModel>>({
+      mutationKey: this.modelKeys.remove(),
+      ...options,
+    });
+  }
+
+  invalidate() {}
+
+  invalidateById(id: ModelId) {}
+
+  invalidateWhere(fn: (model: TModel) => boolean) {}
 }
 
 export type PaginationParams = {
@@ -103,17 +453,6 @@ export type PaginationParams = {
   limit?: number;
   orderBy?: string;
 };
-
-interface CreateApiModelOptions<
-  Schema extends TSchema,
-  TParams = Static<Schema>
-> {
-  name: string;
-  resource: string;
-  schema: Schema;
-  params?: TParams;
-  idKey?: keyof Static<Schema>;
-}
 
 const parseSearchQuery = (fields: Required<SearchQuery>["fields"]) =>
   fields.reduce((acc, { name, is, isOneOf, contains }) => {
@@ -140,7 +479,10 @@ const parseSearchQuery = (fields: Required<SearchQuery>["fields"]) =>
     return acc;
   }, {});
 
-function buildResourcePath<TParams extends TSchema>(baseUrl: string, resource: string, params?: Static<TParams>) {
+function buildResourcePath<TParams extends TSchema>(
+  baseUrl: string,
+  resource: string
+) {
   const cleanBaseUrl = baseUrl.endsWith("/")
     ? baseUrl.substr(0, baseUrl.length - 1)
     : baseUrl;
@@ -148,229 +490,55 @@ function buildResourcePath<TParams extends TSchema>(baseUrl: string, resource: s
     ? resource.substr(1)
     : resource;
   return `${cleanBaseUrl}/${cleanResource}`;
-};
+}
+
+interface CreateApiModelOptions<
+  TResourceParams extends TSchema,
+  TQueryParams extends TSchema,
+  TModel extends TSchema,
+  TCreate extends TSchema,
+  TUpdate extends TSchema,
+> {
+  name: string;
+  resource: string;
+  params: TResourceParams;
+  query: TQueryParams;
+  model: TModel;
+  create: TCreate;
+  update: TUpdate;
+  idKey: keyof Static<TModel>;
+}
 
 export function createApiModel<
+  TResourceParams extends TSchema,
+  TQueryParams extends TSchema,
   TModel extends TSchema,
-  TParams extends TSchema = TModel
+  TCreate extends TSchema,
+  TUpdate extends TSchema,
 >({
   name,
   resource,
-  schema,
   params,
+  model,
+  create,
+  update,
+  query,
   idKey = "id" as keyof Static<TModel>,
-}: CreateApiModelOptions<TModel, TParams>): ModelFactory<TModel, TParams> & {
-  schema: TModel;
-} {
-  const factoryFn = ({
-    client,
-    baseUrl,
-    token = createRef<string>(),
-  }: ModelFactoryOptions): Model<TModel, TParams> => {
-    const modelKeys = {
-      search: (params: SearchQuery = {}) => [name, ...(params ? [params] : [])],
-      get: (id: ModelId) => [name, id],
-    };
-
-    const resourcePath = buildResourcePath<TParams>(baseUrl, resource);
-
-    const createMutation = createCreateMutation<TModel>(name, {
-      client,
-      idKey,
-      createFn: createCreateRequestFn<TModel>({ resourcePath, token }),
-      itemCacheKey: modelKeys.get,
-      itemIndexCacheKey: modelKeys.search,
-    });
-
-    const updateMutation = createUpdateMutation<TModel>(name, {
-      client,
-      idKey,
-      updateFn: createUpdateRequestFn<TModel>({
-        resourcePath,
-        idKey,
-        token,
-      }),
-      itemCacheKey: modelKeys.get,
-      itemIndexCacheKey: modelKeys.search,
-    });
-
-    const removeMutation = createDeleteMutation<TModel>(name, {
-      client,
-      idKey,
-      deleteFn: createRemoveRequestFn<TModel & { id: ModelId }>({
-        resourcePath,
-        token,
-      }),
-      itemCacheKey: modelKeys.get,
-      itemIndexCacheKey: modelKeys.search,
-    });
-
-    const callQuery = (
-      params: QueryParameters,
-      options?: QueryOptions<Static<TModel>>
-    ) => {
-      const fn = createCallRequestFn<TModel>({
-        resourcePath,
-        token,
-      });
-      return useQuery({
-        queryKey: modelKeys.search(params),
-        queryFn: () => fn(params),
-        initialData: [],
-        ...options,
-      });
-    };
-
-    const itemQuery = (id: ModelId, options?: QueryOptions<Static<TModel>>) => {
-      const fn = createGetRequestFn<TModel>({ resourcePath, token });
-      return useQuery<Static<TModel>>({
-        queryKey: modelKeys.get(id),
-        queryFn: () => fn(id),
-        initialData: [],
-        ...options,
-      });
-    };
-
-    const allQuery = () => {
-      const queryClient = useQueryClient();
-      const fn = createSearchRequestFn<TModel>({
-        resourcePath,
-        token,
-      });
-      return useQuery({
-        placeholderData: (previousData) => previousData,
-        queryKey: modelKeys.search({}),
-        queryFn: async () => {
-          const { results } = await fn();
-          results.forEach((item) => {
-            queryClient.setQueryData(
-              modelKeys.get(item[idKey] as ModelId),
-              item
-            );
-          });
-          return results;
-        },
-      });
-    };
-
-    const paginatedQuery = ({
-      offset = 0,
-      limit = 99,
-      fields = [],
-      orderBy,
-    }: SearchQuery = {}) => {
-      const queryClient = useQueryClient();
-      const fn = createSearchRequestFn<TModel>({
-        resourcePath,
-        token,
-      });
-      return useQuery({
-        placeholderData: (previousData) => previousData,
-        queryKey: modelKeys.search({ offset, limit, orderBy, fields }),
-        queryFn: async () => {
-          const { results, total } = await fn({
-            limit,
-            offset,
-            orderBy,
-            ...parseSearchQuery(fields),
-          });
-          results.forEach((item) => {
-            queryClient.setQueryData(
-              modelKeys.get(item[idKey] as ModelId),
-              item
-            );
-          });
-          return { results, total, offset, limit };
-        },
-      });
-    };
-
-    const infiniteQuery = ({
-      offset = 0,
-      orderBy,
-      fields = [],
-    }: SearchQuery = {}) => {
-      const limit = 99;
-      const queryClient = useQueryClient();
-      const fn = createSearchRequestFn<TModel>({
-        resourcePath,
-        token,
-      });
-      return useInfiniteQuery({
-        placeholderData: (previousData) => previousData,
-        queryKey: modelKeys.search({ offset, limit, orderBy, fields }),
-        queryFn: async () => {
-          const { results, total } = await fn({
-            limit,
-            offset,
-            orderBy,
-            ...parseSearchQuery(fields),
-          });
-          results.forEach((item) => {
-            queryClient.setQueryData(
-              modelKeys.get(item[idKey] as ModelId),
-              item
-            );
-          });
-          return { results, total, offset, limit };
-        },
-        defaultPageParam: 0,
-        getNextPageParam: ({ total, offset, limit }, pages) => {
-          const nextOffset = offset + limit;
-          if (nextOffset >= total) {
-            return undefined;
-          }
-          return nextOffset;
-        },
-      });
-    };
-
-    async function run(params: Static<TParams>): Promise<Static<TModel, []>> {
-      const replaced = resourcePath.split('/').map((part) => {
-        if (part.startsWith(':')) {
-          const key = part.substr(1);
-
-          if(!(key in Object(params))) {
-            throw new Error(`Missing parameter ${key} for resource ${resourcePath}`);
-          }
-
-          return Object(params)[key];
-        }
-        return part;
-      }).join('/');
-      const [resp] = await request<Static<TParams>, TModel[]>(replaced, {
-        method: "post",
-        token: token.current,
-        body: params,
-      });
-      return resp;
-    }
-
-    const model = new Model<TModel, TParams>({
-      schema: schema,
-      create: createMutation,
-      update: updateMutation,
-      remove: removeMutation,
-      get: itemQuery,
-      call: callQuery,
-      run,
-      all: allQuery,
-      search: paginatedQuery,
-      infinite: infiniteQuery,
-      invalidateOne: (id: ModelId) =>
-        client.invalidateQueries({ queryKey: modelKeys.get(id) }),
-      invalidateAll: () =>
-        client.invalidateQueries({ queryKey: modelKeys.search() }),
-      read: (id: ModelId) => client.getQueryData<TModel>(modelKeys.get(id)),
-      readAll: () => client.getQueryData<TModel[]>(modelKeys.search()),
-      readOneFromAll: (id: ModelId) => {
-        const all = client.getQueryData<TModel[]>(modelKeys.search()) ?? [];
-        return all.find((item) => item.id === id);
-      },
-    });
-
-    return model;
-  };
-
-  return Object.assign(factoryFn, { schema });
+}: CreateApiModelOptions<
+  TResourceParams,
+  TQueryParams,
+  TModel,
+  TCreate,
+  TUpdate
+>) {
+  return new Model<TResourceParams, TQueryParams, TModel, TCreate, TUpdate>({
+    name,
+    resource,
+    params,
+    query,
+    model,
+    create,
+    update,
+    idKey,
+  });
 }

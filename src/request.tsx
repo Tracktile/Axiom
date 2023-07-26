@@ -9,7 +9,7 @@ export type QueryParameters = Record<
   string | number | boolean | undefined
 >;
 
-export interface APIRequestParams<T> {
+interface APIRequestParams<T> {
   method?: string;
   headers?: Record<string, string>;
   query?: QueryParameters;
@@ -77,7 +77,7 @@ export async function request<TRequestBody, TResponseBody = TRequestBody>(
   ];
 }
 
-export type RequestCreatorOptions = {
+type RequestCreatorOptions = {
   resourcePath: string;
   token: MutableRefObject<string | null>;
 };
@@ -102,7 +102,7 @@ export function createSearchRequestFn<T extends TSchema>({
         ...(!!orderBy ? { "X-Pagination-OrderBy": orderBy } : {}),
       },
     });
-    return { results, total };
+    return { results, total, offset, limit, orderBy };
   };
 }
 
@@ -171,15 +171,12 @@ export function createRemoveRequestFn<T extends TSchema>({
   ...options
 }: RequestCreatorOptions) {
   return async function remove(body: Static<T> & { id: ModelId }) {
-    const [resp] = await request<Static<T>, void>(
-      `${resourcePath}/${body.id}`,
-      {
-        method: "delete",
-        body,
-        token: token.current,
-        ...options,
-      }
-    );
-    return resp;
+    await request<Static<T>, void>(`${resourcePath}/${body.id}`, {
+      method: "delete",
+      body,
+      token: token.current,
+      ...options,
+    });
+    return body;
   };
 }
