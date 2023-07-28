@@ -1,6 +1,6 @@
 {
   "name": "@tracktile/axiom",
-  "version": "0.5.1",
+  "version": "1.0.0-beta.1",
   "main": "dist/index.js",
   "repository": {
     "type": "git",
