@@ -25,10 +25,10 @@
 ## Usage
 
 ```typescript
-import {createApiModel, createApiProvider } from '@tracktile/axiom';
+import {createModel, createProcedure, createApiProvider } from '@tracktile/axiom';
 
 // Create an API Model
-export const User = createApiModel({
+export const User = createModel({
   name: "User",
   resource: "/users",
   schema: Type.Object({

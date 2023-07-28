@@ -3,6 +3,7 @@ import { Static, TSchema } from "@sinclair/typebox";
 
 import { ModelId, PaginationParams } from "./model";
 import { MutableRefObject } from "react";
+import { InfiniteData, QueryFunction } from "@tanstack/react-query";
 
 export type QueryParameters = Record<
   string,
@@ -15,6 +16,16 @@ interface APIRequestParams<T> {
   query?: QueryParameters;
   body?: T;
   token?: string | null;
+}
+
+export function buildResourcePath(baseUrl: string, resource: string) {
+  const cleanBaseUrl = baseUrl.endsWith("/")
+    ? baseUrl.substr(0, baseUrl.length - 1)
+    : baseUrl;
+  const cleanResource = resource.startsWith("/")
+    ? resource.substr(1)
+    : resource;
+  return `${cleanBaseUrl}/${cleanResource}`;
 }
 
 export async function request<TRequestBody, TResponseBody = TRequestBody>(

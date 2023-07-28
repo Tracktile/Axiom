@@ -1,28 +1,28 @@
-import { createApiModel, Type, Static } from "../../src";
+import { createModel, T, Static } from "../../src";
 
-export const User = createApiModel({
+export const User = createModel({
   name: "User",
   resource: "/users",
   idKey: "id",
-  model: Type.Object({
-    id: Type.String(),
-    email: Type.String(),
-    name: Type.String(),
-    status: Type.String(),
+  model: T.Object({
+    id: T.String(),
+    email: T.String(),
+    name: T.String(),
+    status: T.String(),
   }),
-  create: Type.Object({
-    name: Type.String(),
-    email: Type.String(),
+  create: T.Object({
+    name: T.String(),
+    email: T.String(),
   }),
-  update: Type.Object({
-    name: Type.String(),
+  update: T.Object({
+    name: T.String(),
   }),
-  query: Type.Object({
-    name: Type.Optional(Type.String()),
-    email: Type.Optional(Type.String()),
+  query: T.Object({
+    name: T.Optional(T.String()),
+    email: T.Optional(T.String()),
   }),
-  params: Type.Object({
-    name: Type.Optional(Type.String()),
+  params: T.Object({
+    name: T.Optional(T.String()),
   }),
 });
 

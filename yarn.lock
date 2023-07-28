@@ -74,17 +74,18 @@
   resolved "https://registry.yarnpkg.com/@sinclair/typebox/-/typebox-0.28.5.tgz#5bb0568c9bca97a1f031c3a30ac625976d22d235"
   integrity sha512-3BjziLrALI2q+KpSKMwQdHP0MwmBpiu3oH0LM3mr7Aob9xO2z1hbGxjorTH7l5msuevXH7TU7YLt3Qs7U6Iokg==
 
-"@tanstack/query-core@5.0.0-alpha.21":
-  version "5.0.0-alpha.21"
-  resolved "https://registry.yarnpkg.com/@tanstack/query-core/-/query-core-5.0.0-alpha.21.tgz#813a23abb867c5f2e692373a286a9a3e5c61339b"
-  integrity sha512-bXnHC8NEKU840o1YYiENySobGWYXCHBSgXnEOsuUsh/gD2uE2EymUYS2wbKI2I7rflTWojx/Ne1PauEKBz8Rtw==
+"@tanstack/query-core@5.0.0-beta.0":
+  version "5.0.0-beta.0"
+  resolved "https://registry.yarnpkg.com/@tanstack/query-core/-/query-core-5.0.0-beta.0.tgz#6d3b6c7bb0e1479655303e307aea2b563800b3f8"
+  integrity sha512-VGq/H3PuRoj0shOcg1S5Flv3YD2qNz2ttk8w5xe5AHQE1I8NO9EHSBUxezIpk4dD6M7bQDtwHBMqqU2EwMwyUw==
 
-"@tanstack/react-query@^5.0.0-alpha.19":
-  version "5.0.0-alpha.21"
-  resolved "https://registry.yarnpkg.com/@tanstack/react-query/-/react-query-5.0.0-alpha.21.tgz#10a1b8b18a13948d37c14c5f3018538542a0bb64"
-  integrity sha512-HCa+BLPTFoM5fcleFx6GPMyo3X8P+4lhy/fzHup9QYBPcSQ0L1USUOhaA4LwkFc+VSdOwZg9wuCc3BkpmKEqLA==
+"@tanstack/react-query@^5.0.0-beta.2":
+  version "5.0.0-beta.2"
+  resolved "https://registry.yarnpkg.com/@tanstack/react-query/-/react-query-5.0.0-beta.2.tgz#1ba1ad2061600798477d93d48eec1320685fa0c8"
+  integrity sha512-JdK1HRw20tuwg3GfT3QZTkuS7s2KDa9FeozuJ7jZULlwPczZagouqYmM6+PL0ad6jfCnw8NzmLFtZdlBx6cTmA==
   dependencies:
-    "@tanstack/query-core" "5.0.0-alpha.21"
+    "@tanstack/query-core" "5.0.0-beta.0"
+    client-only "0.0.1"
 
 "@ts-morph/common@~0.12.3":
   version "0.12.3"
@@ -208,6 +209,11 @@ chalk@^2.0.0:
     ansi-styles "^3.2.1"
     escape-string-regexp "^1.0.5"
     supports-color "^5.3.0"
+
+client-only@0.0.1:
+  version "0.0.1"
+  resolved "https://registry.yarnpkg.com/client-only/-/client-only-0.0.1.tgz#38bba5d403c41ab150bff64a95c85013cf73bca1"
+  integrity sha512-IV3Ou0jSMzZrd3pZ48nLkT9DA7Ag1pnPzaiQhpW7c3RbcqqzvzzVu+L8gfqMp/8IM2MQtSiqaCxrrcfu8I8rMA==
 
 code-block-writer@^11.0.0:
   version "11.0.3"

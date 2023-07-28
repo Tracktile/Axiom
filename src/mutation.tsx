@@ -202,7 +202,6 @@ export function createDeleteMutation<T extends TSchema>(
     retry: false,
     mutationFn: (item: Static<T> & { id: ModelId }) => deleteFn(item),
     onMutate: async (item: Static<T>): Promise<TContext<Static<T>>> => {
-      console.log("deleting item", item);
       await client.cancelQueries({
         queryKey: itemCacheKey(
           (item as Record<string, ModelId>)[idKey] as ModelId
@@ -220,7 +219,7 @@ export function createDeleteMutation<T extends TSchema>(
         oldData.filter(
           (old) =>
             (old as Record<typeof idKey, ModelId>)[idKey] !==
-            ((item as Record<string, ModelId>)[idKey] as ModelId)
+            ((item as Record<typeof idKey, ModelId>)[idKey] as ModelId)
         )
       );
       return { previous };

@@ -4,15 +4,16 @@ import {
   useQuery,
   useInfiniteQuery,
   UseQueryResult,
-  UseInfiniteQueryResult,
-  InfiniteData,
   UseMutationResult,
   useMutation,
   UseMutationOptions,
+  UseQueryOptions,
+  DefinedUseInfiniteQueryResult,
 } from "@tanstack/react-query";
 import { TSchema, Static } from "@sinclair/typebox";
 
 import {
+  buildResourcePath,
   createCreateRequestFn,
   createGetRequestFn,
   createRemoveRequestFn,
@@ -21,6 +22,7 @@ import {
 } from "./request";
 
 import { SearchQuery } from "./api";
+import { DefinedInitialDataInfiniteOptions } from "@tanstack/react-query/build/legacy/infiniteQueryOptions";
 
 type AxiomQueryOptions = {
   offset?: number;
@@ -29,20 +31,29 @@ type AxiomQueryOptions = {
   fields?: SearchQuery["fields"];
 };
 
-type AxiomModelQueryOptions<TModel extends TSchema> = UseInfiniteQueryResult<
-  InfiniteData<{
-    results: Static<TModel>[];
-    total: number;
-    offset: number;
-    limit: number;
-  }>,
+type AxiomModelGetOptions<TModel extends TSchema> = UseQueryOptions<
+  Static<TModel>,
   Error
 >;
 
-type AxiomModelQueryResult<TModel extends TSchema> = UseQueryResult<
+type AxiomModelQueryOptions<TModel extends TSchema> =
+  DefinedInitialDataInfiniteOptions<
+    {
+      results: Static<TModel>[];
+      total: number;
+      offset: number;
+      limit: number;
+    },
+    Error
+  >;
+
+type AxiomModelGetResult<TModel extends TSchema> = UseQueryResult<
   Static<TModel>,
-  unknown
+  Error
 >;
+
+type AxiomModelQueryResult<TModel extends TSchema> =
+  DefinedUseInfiniteQueryResult<Static<TModel>, Error>;
 
 type AxiomModelMutationOptions<
   TModal extends TSchema,
@@ -72,10 +83,14 @@ interface IModel<
     query: TQueryParams;
     model: TModel;
   };
-  get: (
-    id: ModelId,
+  query: (
+    query: AxiomQueryOptions,
     options: AxiomModelQueryOptions<TModel>
   ) => AxiomModelQueryResult<TModel>;
+  get: (
+    id: ModelId,
+    options: Partial<AxiomModelGetOptions<TModel>>
+  ) => AxiomModelGetResult<TModel>;
   create: (
     options: AxiomModelMutationOptions<TModel, TCreate>
   ) => AxiomModelMutationResult<TModel, TCreate>;
@@ -292,7 +307,6 @@ export class Model<
       onMutate: async (
         item: Static<TModel>
       ): Promise<TContext<Static<TModel>>> => {
-        console.log("deleting item", item);
         await this.client.cancelQueries({
           queryKey: this.modelKeys.remove(
             (item as Record<string, ModelId>)[this.idKey] as ModelId
@@ -340,8 +354,12 @@ export class Model<
     return this;
   }
 
-  get(id: ModelId, options: Partial<AxiomModelQueryOptions<TModel>> = {}) {
+  get(
+    id: ModelId,
+    options: Partial<AxiomModelGetOptions<TModel>> = {}
+  ): AxiomModelGetResult<TModel> {
     return useQuery<Static<TModel>>({
+      ...options,
       queryKey: this.modelKeys.get(id),
       enabled: !!id,
       queryFn: () =>
@@ -350,69 +368,61 @@ export class Model<
           token: this.token,
         })(id),
       initialData: [] as Static<TModel>[] & undefined,
-      ...options,
     });
   }
 
   query(
-    { offset = 0, limit = 99, orderBy, fields = [] }: AxiomQueryOptions = {},
-    options?: AxiomModelQueryOptions<TModel>
+    {
+      offset: offsetArg,
+      limit = 99,
+      orderBy,
+      fields = [],
+    }: AxiomQueryOptions = {}
+    // options?: AxiomModelQueryOptions<TModel>
   ) {
-    const fn = createSearchRequestFn<TModel>({
-      resourcePath: buildResourcePath(this.baseUrl, this.resource),
-      token: this.token,
-    });
-    const {
-      data,
-      ...queryResult
-    }: UseInfiniteQueryResult<
-      InfiniteData<{
-        results: Static<TModel>[];
-        total: number;
-        offset: number;
-        limit: number;
-      }>
-    > = useInfiniteQuery<{
-      results: Static<TModel>[];
-      total: number;
-      offset: number;
-      limit: number;
-    }>({
-      initialData: () => ({
-        pageParams: [],
-        pages: [],
+    const query = useInfiniteQuery({
+      queryKey: this.modelKeys.search({
+        offset: offsetArg,
+        limit,
+        orderBy,
+        fields,
       }),
-      placeholderData: (previousData) => previousData,
-      queryKey: this.modelKeys.search({ offset, limit, orderBy, fields }),
-      queryFn: async () => {
-        const { results, total } = await fn({
+      queryFn: async ({ pageParam = 0 }) => {
+        const offset = offsetArg ?? pageParam;
+
+        const { results, total } = await createSearchRequestFn<TModel>({
+          resourcePath: buildResourcePath(this.baseUrl, this.resource),
+          token: this.token,
+        })({
           limit,
           offset,
           orderBy,
           ...parseSearchQuery(fields),
         });
-        results.forEach((item) => {
-          this.client.setQueryData(
-            this.modelKeys.get(item[this.idKey] as ModelId),
-            item
-          );
-        });
-        return { results, total, offset, limit };
+        return {
+          results,
+          total,
+          offset,
+          limit,
+        };
       },
-      defaultPageParam: { offset: 0 },
-      getNextPageParam: (lastPageParams, pages) => {
-        const { offset = 0, limit = 99, total = 0 } = lastPageParams ?? {};
-        const nextOffset = offset + limit;
-        if (nextOffset >= total) {
-          return undefined;
-        }
-        return nextOffset;
+      initialData: {
+        pages: [],
+        pageParams: [],
       },
-      ...options,
+      defaultPageParam: 0,
+      getNextPageParam: (lastPage, allPages) => {
+        return (lastPage?.offset ?? 0) + lastPage?.results?.length ?? 0;
+      },
+      getPreviousPageParam: (firstPage, allPages) => {
+        return (firstPage?.offset ?? 0) - firstPage?.results?.length ?? 0;
+      },
+      // ...options
     });
+    const { data, ...queryResult } = query;
     return {
       data: data?.pages.map((page) => page.results).flat() ?? [],
-      pages: data?.pages,
+      pages: data.pages,
       ...queryResult,
     };
   }
@@ -479,19 +489,6 @@ const parseSearchQuery = (fields: Required<SearchQuery>["fields"]) =>
     return acc;
   }, {});
 
-function buildResourcePath<TParams extends TSchema>(
-  baseUrl: string,
-  resource: string
-) {
-  const cleanBaseUrl = baseUrl.endsWith("/")
-    ? baseUrl.substr(0, baseUrl.length - 1)
-    : baseUrl;
-  const cleanResource = resource.startsWith("/")
-    ? resource.substr(1)
-    : resource;
-  return `${cleanBaseUrl}/${cleanResource}`;
-}
-
 interface CreateApiModelOptions<
   TResourceParams extends TSchema,
   TQueryParams extends TSchema,
@@ -509,7 +506,7 @@ interface CreateApiModelOptions<
   idKey: keyof Static<TModel>;
 }
 
-export function createApiModel<
+export function createModel<
   TResourceParams extends TSchema,
   TQueryParams extends TSchema,
   TModel extends TSchema,
