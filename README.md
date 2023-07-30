@@ -18,26 +18,28 @@
 
 ```sh
   npm install @tracktile/axiom
-  # OR
-  yarn add @tracktile/axiom
 ```
 
 ## Usage
 
 ```typescript
-import {createModel, createProcedure, createApiProvider } from '@tracktile/axiom';
+import { createModel, createProcedure, createApiProvider, T } from '@tracktile/axiom';
 
 // Create an API Model
 // Models come with offline and optimistic mutation by default.
 export const User = createModel({
   name: "User",
   resource: "/users",
-  schema: Type.Object({
-    id: Type.String(),
-    name: Type.String(),
-    email: Type.String(),
-    enabled: Type.Boolean(),
+  model: T.Object({
+    id: T.String(),
+    name: T.String(),
+    email: T.String(),
+    enabled: T.Boolean(),
   }),
+  create: T.Object({
+    name: T.String(),
+    email: T.String()
+  })
 });
 
 // Create a procedure
@@ -69,7 +71,7 @@ const useApi = createUseApiHook({ models, fn });
 // Queries are cached and retried automatically
 // Mutations are optimistic by default and retry forever
 
-const MyReactComponent = () => {
+const MyAwesomeComponent = () => {
   // Access stateful queries and mutations with accurate type safety, inferred from your models.
   const { data: users, isLoading: isLoadingUsers, dataUpdatedAt: usersUpdatedAt } = api.User.search();
 
@@ -82,23 +84,23 @@ const MyReactComponent = () => {
     retry: true,
   });
 
-
-
   return (
-    <div>{JSON.stringify(user)}</div>
-    <div>Fetched: {usersUpdatedAt}</div>
-    <button onPress={() => createUser({
-      id: uuid(),
-      email: "new@user.com",
-      firstName: "New",
-      lastName: "User",
-      enable: true
-    })}>Add</button>
+    <>
+      <div>{JSON.stringify(user)}</div>
+      <div>Fetched: {usersUpdatedAt}</div>
+      <button onPress={() => createUser({
+        name: 'My User',
+        email: 'user@users.com',
+      })}>Add</button>
+      <button onPress={sendAlert}>Add</button>
+    </>
   )
 }
 
-export default MyReactComponent;
-
+const App = () =>
+  <ApiProvider baseUrl="https://my.awesome.backend">
+    <MyAwesomeComponent>
+  </ApiProvider>
 ```
 
 ## Examples
