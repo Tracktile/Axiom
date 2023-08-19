@@ -41,7 +41,7 @@ export class Procedure<TParams extends TSchema, TResult extends TSchema>
   resource: string;
   params: TParams;
   result: TResult;
-  client: QueryClient;
+  client?: QueryClient;
 
   constructor(options: ProcedureOptions<TParams, TResult>) {
     this.name = options.name;
@@ -49,7 +49,6 @@ export class Procedure<TParams extends TSchema, TResult extends TSchema>
     this.resource = options.resource;
     this.params = options.params;
     this.result = options.result;
-    this.client = new QueryClient();
     this.token = createRef<string | null>();
   }
 

@@ -1,28 +1,63 @@
 {
   "name": "@tracktile/axiom",
-  "version": "1.0.0-beta.1",
-  "main": "dist/index.js",
+  "version": "1.0.0-beta.5",
+  "main": "./common/index.js",
+  "types": "./common/index.d.ts",
   "repository": {
     "type": "git",
     "url": "https://github.com/Tracktile/Axiom.git"
   },
   "license": "MIT",
   "scripts": {
-    "build": "rm -rf dist/ && tsc",
-    "find:dead-code": "ts-prune"
+    "build": "tsc",
+    "test": "jest -c=./package.json src.*test.ts --verbose --coverage --forceExit"
+  },
+  "bin": {
+    "axiom": "./cli/index.js"
   },
   "files": [
-    "dist/"
+    "common/",
+    "client/",
+    "server",
+    "cli/"
   ],
   "dependencies": {
+    "@koa/cors": "^4.0.0",
+    "@koa/router": "^12.0.0",
+    "@openapi-contrib/json-schema-to-openapi-schema": "^2.2.5",
     "@sinclair/typebox": "^0.31.1",
     "@tanstack/react-query": "^5.0.0-beta.16",
-    "qs": "^6.11.2"
+    "@vendia/serverless-express": "^4.10.4",
+    "kebab-case": "^1.0.2",
+    "koa": "^2.14.2",
+    "koa-bodyparser": "^4.4.1",
+    "koa-qs": "^3.0.0",
+    "openapi3-ts": "^4.1.2",
+    "qs": "^6.11.2",
+    "title-case": "^3.0.3",
+    "ts-command-line-args": "^2.5.1",
+    "ts-custom-error": "^3.3.1",
+    "uuid": "^9.0.0"
   },
   "devDependencies": {
+    "@babel/preset-env": "^7.22.10",
+    "@babel/preset-typescript": "^7.22.5",
+    "@types/aws-lambda": "^8.10.119",
+    "@types/jest": "^29.5.3",
+    "@types/koa": "^2.13.8",
+    "@types/koa-bodyparser": "^4.3.10",
+    "@types/koa-qs": "^2.0.0",
+    "@types/koa__cors": "^4.0.0",
+    "@types/koa__router": "^12.0.0",
     "@types/qs": "^6.9.7",
     "@types/react": "^18.2.20",
+    "@types/supertest": "^2.0.12",
+    "@types/uuid": "^9.0.2",
+    "babel-jest": "^29.6.2",
+    "jest": "^29.6.2",
     "prettier": "^3.0.2",
+    "supertest": "^6.3.3",
+    "ts-jest": "^29.1.1",
     "ts-node": "^10.9.1",
     "ts-prune": "^0.10.3",
     "typescript": "^5.1.6"

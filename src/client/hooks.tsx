@@ -51,6 +51,7 @@ function ApiProvider<
     baseUrl,
     token: tokenRef,
   });
+
   return (
     <QueryClientProvider client={client}>
       <ApiContext.Provider value={{ api }}>{children}</ApiContext.Provider>
@@ -89,7 +90,7 @@ function useApi<
 export function createUseApiHook<
   M extends Record<string, Model<any, any, any, any, any>>,
   P extends Record<string, Procedure<any, any>>,
->({ models = {} as M, fns = {} as P }: { models?: M; fns?: P }) {
+>({}: { models?: M; fns?: P }) {
   return function useApiHook() {
     return useApi<M, P>();
   };

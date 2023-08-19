@@ -69,44 +69,6 @@ export type ModelId = string | number;
 
 type TContext<TData = undefined> = { previous?: TData };
 
-// interface IModel<
-//   TResourceParams extends TSchema,
-//   TQueryParams extends TSchema,
-//   TModel extends TSchema,
-//   TCreate extends TSchema,
-//   TUpdate extends TSchema,
-// > {
-//   schemas: {
-//     create: TCreate;
-//     update: TUpdate;
-//     resource: TResourceParams;
-//     query: TQueryParams;
-//     model: TModel;
-//   };
-//   query: (
-//     query: AxiomQueryOptions,
-//     options: AxiomModelQueryOptions<TModel>
-//   ) => AxiomModelQueryResult<TModel>;
-//   get: (
-//     id: ModelId,
-//     options: Partial<AxiomModelGetOptions<TModel>>
-//   ) => AxiomModelGetResult<TModel>;
-//   create: (
-//     options: AxiomModelMutationOptions<TModel, TCreate>
-//   ) => AxiomModelMutationResult<TModel, TCreate>;
-//   update: (
-//     id: ModelId,
-//     options: AxiomModelMutationOptions<TModel, TUpdate>
-//   ) => AxiomModelMutationResult<TModel, TUpdate>;
-//   remove: (
-//     id: ModelId,
-//     options: AxiomModelMutationOptions<TModel, TModel>
-//   ) => AxiomModelMutationResult<TModel, TModel>;
-//   invalidate: () => void;
-//   invalidateById: (id: ModelId) => void;
-//   invalidateWhere: (fn: (model: TModel) => boolean) => void;
-// }
-
 interface ModelBindOptions {
   client: QueryClient;
   baseUrl: string;
@@ -147,7 +109,7 @@ export class Model<
     query: TQueryParams;
     model: TModel;
   };
-  client: QueryClient = new QueryClient();
+  client?: QueryClient;
   baseUrl: string;
   token: MutableRefObject<string | null>;
 
@@ -172,7 +134,6 @@ export class Model<
       model: options.model,
     };
     this.baseUrl = "";
-    this.client = new QueryClient();
   }
 
   modelKeys = {
@@ -187,6 +148,9 @@ export class Model<
   };
 
   private bindCreateMutation() {
+    if (!this.client) {
+      throw new Error("Client is not bound");
+    }
     this.client.setMutationDefaults(this.modelKeys.create(), {
       mutationFn: (item: Static<TCreate>) => {
         return createCreateRequestFn<TModel>({
@@ -197,6 +161,9 @@ export class Model<
       onMutate: async (
         item: Static<TModel>
       ): Promise<TContext<Static<TModel>>> => {
+        if (!this.client) {
+          throw new Error("Client is not bound");
+        }
         await this.client.cancelQueries({
           queryKey: this.modelKeys.get(
             (item as Record<string, ModelId>)[this.idKey] as ModelId
@@ -220,6 +187,9 @@ export class Model<
         return { previous };
       },
       onSuccess: (item: Static<TModel>) => {
+        if (!this.client) {
+          throw new Error("Client is not bound");
+        }
         this.client.invalidateQueries({
           queryKey: this.modelKeys.get(item[this.idKey] as ModelId),
         });
@@ -230,6 +200,9 @@ export class Model<
         context?: TContext<Static<TModel>>
       ) => {
         if (!!context?.previous) {
+          if (!this.client) {
+            throw new Error("Client is not bound");
+          }
           this.client.setQueryData(
             this.modelKeys.get(
               (item as Record<string, ModelId>)[this.idKey] as ModelId
@@ -246,6 +219,9 @@ export class Model<
   }
 
   bindUpdateMutation() {
+    if (!this.client) {
+      throw new Error("Client is not bound");
+    }
     this.client.setMutationDefaults(this.modelKeys.update(), {
       mutationFn: (
         item: Static<TModel> & { id: "id" | keyof Static<TModel, []> }
@@ -259,6 +235,9 @@ export class Model<
       onMutate: async (
         item: Static<TModel>
       ): Promise<TContext<Static<TModel>>> => {
+        if (!this.client) {
+          throw new Error("Client is not bound");
+        }
         await this.client.cancelQueries({
           queryKey: this.modelKeys.get(
             (item as Record<string, ModelId>)[this.idKey] as ModelId
@@ -284,6 +263,9 @@ export class Model<
         context?: TContext<Static<TModel>>
       ) => {
         if (!!context?.previous) {
+          if (!this.client) {
+            throw new Error("Client is not bound");
+          }
           this.client.setQueryData(
             this.modelKeys.get(
               (item as Record<string, ModelId>)[this.idKey] as ModelId
@@ -296,6 +278,9 @@ export class Model<
   }
 
   bindRemoveMutation() {
+    if (!this.client) {
+      throw new Error("Client is not bound");
+    }
     this.client.setMutationDefaults(this.modelKeys.remove(), {
       retry: false,
       mutationFn: (item: Static<TModel> & { id: ModelId }) =>
@@ -306,6 +291,9 @@ export class Model<
       onMutate: async (
         item: Static<TModel>
       ): Promise<TContext<Static<TModel>>> => {
+        if (!this.client) {
+          throw new Error("Client is not bound");
+        }
         await this.client.cancelQueries({
           queryKey: this.modelKeys.remove(
             (item as Record<string, ModelId>)[this.idKey] as ModelId
@@ -332,6 +320,9 @@ export class Model<
         context?: TContext<Static<TModel>>
       ) => {
         if (typeof context?.previous !== "undefined") {
+          if (!this.client) {
+            throw new Error("Client is not bound");
+          }
           this.client.setQueryData(
             this.modelKeys.get(
               (item as Record<string, ModelId>)[this.idKey] as ModelId

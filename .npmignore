@@ -1,0 +1,11 @@
+.git/
+node_modules/
+*.ts
+.tscache/
+test/
+example/
+coverage/
+.gitignore
+.editorconfig
+.prettierrc
+tsconfig.tsbuildinfo

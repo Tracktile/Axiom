@@ -3,7 +3,6 @@ import { Static, TSchema } from "@sinclair/typebox";
 
 import { ModelId, PaginationParams } from "./model";
 import { MutableRefObject } from "react";
-import { InfiniteData, QueryFunction } from "@tanstack/react-query";
 
 export type QueryParameters = Record<
   string,
