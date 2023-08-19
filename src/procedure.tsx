@@ -79,7 +79,7 @@ export class Procedure<TParams extends TSchema, TResult extends TSchema>
     });
     return {
       ...mutation,
-      mutate: mutation.mutateAsync,
+      mutate: mutation.mutate,
       run: mutation.mutateAsync,
     };
   }

@@ -69,43 +69,43 @@ export type ModelId = string | number;
 
 type TContext<TData = undefined> = { previous?: TData };
 
-interface IModel<
-  TResourceParams extends TSchema,
-  TQueryParams extends TSchema,
-  TModel extends TSchema,
-  TCreate extends TSchema,
-  TUpdate extends TSchema,
-> {
-  schemas: {
-    create: TCreate;
-    update: TUpdate;
-    resource: TResourceParams;
-    query: TQueryParams;
-    model: TModel;
-  };
-  query: (
-    query: AxiomQueryOptions,
-    options: AxiomModelQueryOptions<TModel>
-  ) => AxiomModelQueryResult<TModel>;
-  get: (
-    id: ModelId,
-    options: Partial<AxiomModelGetOptions<TModel>>
-  ) => AxiomModelGetResult<TModel>;
-  create: (
-    options: AxiomModelMutationOptions<TModel, TCreate>
-  ) => AxiomModelMutationResult<TModel, TCreate>;
-  update: (
-    id: ModelId,
-    options: AxiomModelMutationOptions<TModel, TUpdate>
-  ) => AxiomModelMutationResult<TModel, TUpdate>;
-  remove: (
-    id: ModelId,
-    options: AxiomModelMutationOptions<TModel, TModel>
-  ) => AxiomModelMutationResult<TModel, TModel>;
-  invalidate: () => void;
-  invalidateById: (id: ModelId) => void;
-  invalidateWhere: (fn: (model: TModel) => boolean) => void;
-}
+// interface IModel<
+//   TResourceParams extends TSchema,
+//   TQueryParams extends TSchema,
+//   TModel extends TSchema,
+//   TCreate extends TSchema,
+//   TUpdate extends TSchema,
+// > {
+//   schemas: {
+//     create: TCreate;
+//     update: TUpdate;
+//     resource: TResourceParams;
+//     query: TQueryParams;
+//     model: TModel;
+//   };
+//   query: (
+//     query: AxiomQueryOptions,
+//     options: AxiomModelQueryOptions<TModel>
+//   ) => AxiomModelQueryResult<TModel>;
+//   get: (
+//     id: ModelId,
+//     options: Partial<AxiomModelGetOptions<TModel>>
+//   ) => AxiomModelGetResult<TModel>;
+//   create: (
+//     options: AxiomModelMutationOptions<TModel, TCreate>
+//   ) => AxiomModelMutationResult<TModel, TCreate>;
+//   update: (
+//     id: ModelId,
+//     options: AxiomModelMutationOptions<TModel, TUpdate>
+//   ) => AxiomModelMutationResult<TModel, TUpdate>;
+//   remove: (
+//     id: ModelId,
+//     options: AxiomModelMutationOptions<TModel, TModel>
+//   ) => AxiomModelMutationResult<TModel, TModel>;
+//   invalidate: () => void;
+//   invalidateById: (id: ModelId) => void;
+//   invalidateWhere: (fn: (model: TModel) => boolean) => void;
+// }
 
 interface ModelBindOptions {
   client: QueryClient;
@@ -136,8 +136,7 @@ export class Model<
   TModel extends TSchema,
   TCreate extends TSchema,
   TUpdate extends TSchema,
-> implements IModel<TResourceParams, TQueryParams, TModel, TCreate, TUpdate>
-{
+> {
   name: string;
   resource: string;
   idKey: keyof Static<TModel>;
@@ -371,59 +370,55 @@ export class Model<
     });
   }
 
-  query(
-    {
-      offset: offsetArg,
-      limit = 99,
-      orderBy,
-      fields = [],
-    }: AxiomQueryOptions = {}
-    // options?: AxiomModelQueryOptions<TModel>
-  ) {
+  query({
+    offset: offsetArg,
+    limit = 99,
+    orderBy,
+    fields = [],
+  }: AxiomQueryOptions = {}) {
+    const queryFn = async ({ pageParam = 0 }) => {
+      const offset = offsetArg ?? (pageParam as number);
+
+      const { results, total } = await createSearchRequestFn<TModel>({
+        resourcePath: buildResourcePath(this.baseUrl, this.resource),
+        token: this.token,
+      })({
+        limit,
+        offset,
+        orderBy,
+        ...parseSearchQuery(fields),
+      });
+      return {
+        results,
+        total,
+        offset,
+        limit,
+      };
+    };
+
     const query = useInfiniteQuery({
       queryKey: this.modelKeys.search({
-        offset: offsetArg,
-        limit,
         orderBy,
         fields,
       }),
-      queryFn: async ({ pageParam = 0 }) => {
-        const offset = offsetArg ?? pageParam;
-
-        const { results, total } = await createSearchRequestFn<TModel>({
-          resourcePath: buildResourcePath(this.baseUrl, this.resource),
-          token: this.token,
-        })({
-          limit,
-          offset,
-          orderBy,
-          ...parseSearchQuery(fields),
-        });
-        return {
-          results,
-          total,
-          offset,
-          limit,
-        };
-      },
+      queryFn,
       initialData: {
         pages: [],
         pageParams: [],
       },
       defaultPageParam: 0,
-      getNextPageParam: (lastPage, allPages) => {
+      getNextPageParam: (lastPage, allPages, lastPageParam) => {
         return (lastPage?.offset ?? 0) + lastPage?.results?.length ?? 0;
       },
-      getPreviousPageParam: (firstPage, allPages) => {
+      getPreviousPageParam: (firstPage, allPages, firstPageParam) => {
         return (firstPage?.offset ?? 0) - firstPage?.results?.length ?? 0;
       },
-      // ...options
     });
     const { data, ...queryResult } = query;
     return {
+      ...queryResult,
       data: data?.pages.map((page) => page.results).flat() ?? [],
       pages: data.pages,
-      ...queryResult,
     };
   }
 
