@@ -1,27 +1,40 @@
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
+import { TSchema } from "@sinclair/typebox";
 import React, {
   createContext,
-  useContext,
   PropsWithChildren,
   useRef,
+  useContext,
 } from "react";
-import { TSchema } from "@sinclair/typebox";
 
-import { Model } from "./model";
-import { createApi, ModelMap, ProcedureMap } from "./api";
-import { Procedure } from "./procedure";
+import { Model } from "../common/model";
+import { Procedure } from "../common/procedure";
+import {
+  createApi,
+  ModelMap,
+  ReactModelMap,
+  ProcedureMap,
+  ReactProcedureMap,
+} from "./api";
+import { ReactModel } from "./model";
 
 type ApiContextData<
-  M extends Record<string, Model<TSchema, TSchema, TSchema, TSchema, TSchema>>,
+  M extends Record<
+    string,
+    Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema>
+  >,
   P extends Record<string, Procedure<TSchema, TSchema>>,
 > = {
-  api: ModelMap<M> & ProcedureMap<P>;
+  api: ReactModelMap<M> & ReactProcedureMap<P>;
 };
 
 const ApiContext = createContext<ApiContextData<{}, {}> | null>(null);
 
 type ApiProviderProps<
-  M extends Record<string, Model<TSchema, TSchema, TSchema, TSchema, TSchema>>,
+  M extends Record<
+    string,
+    Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema>
+  >,
   P extends Record<string, Procedure<TSchema, TSchema>>,
 > = {
   models?: M;
@@ -32,7 +45,10 @@ type ApiProviderProps<
 };
 
 function ApiProvider<
-  M extends Record<string, Model<TSchema, TSchema, TSchema, TSchema, TSchema>>,
+  M extends Record<
+    string,
+    Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema>
+  >,
   P extends Record<string, Procedure<TSchema, TSchema>>,
 >({
   client = new QueryClient(),
@@ -60,7 +76,7 @@ function ApiProvider<
 }
 
 export function createApiProvider<
-  M extends Record<string, Model<any, any, any, any, any>>,
+  M extends Record<string, Model<any, any, any, any, any, any>>,
   P extends Record<string, Procedure<any, any>>,
 >({ models = {} as M, fns = {} as P }: { models?: M; fns?: P }) {
   return function ApiProviderHook(
@@ -73,7 +89,7 @@ export function createApiProvider<
 function useApi<
   M extends Record<
     string,
-    Model<TSchema, TSchema, TSchema, TSchema, TSchema>
+    Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema>
   > = {},
   P extends Record<string, Procedure<TSchema, TSchema>> = {},
 >() {
@@ -88,7 +104,7 @@ function useApi<
 }
 
 export function createUseApiHook<
-  M extends Record<string, Model<any, any, any, any, any>>,
+  M extends Record<string, Model<any, any, any, any, any, any>>,
   P extends Record<string, Procedure<any, any>>,
 >({}: { models?: M; fns?: P }) {
   return function useApiHook() {

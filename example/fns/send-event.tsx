@@ -2,7 +2,6 @@ import { createProcedure, T } from "../../src";
 
 export const SendEvent = createProcedure({
   name: "SendEvent",
-  method: "post",
   resource: "/events",
   params: T.Object({
     name: T.Union([T.Literal("user-created"), T.Literal("user-removed")]),

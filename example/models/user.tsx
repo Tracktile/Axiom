@@ -17,11 +17,12 @@ export const User = createModel({
   update: T.Object({
     name: T.String(),
   }),
+  del: T.Undefined(),
   query: T.Object({
     name: T.Optional(T.String()),
     email: T.Optional(T.String()),
   }),
-  params: T.Object({
+  path: T.Object({
     name: T.Optional(T.String()),
   }),
 });

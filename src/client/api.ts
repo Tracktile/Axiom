@@ -1,9 +1,12 @@
 import { TSchema } from "@sinclair/typebox";
 import { QueryClient } from "@tanstack/react-query";
-
-import { Model } from "./model";
 import { MutableRefObject } from "react";
-import { Procedure } from "./procedure";
+
+import { Model } from "../common/model";
+import { Procedure } from "../common/procedure";
+
+import { ReactModel } from "./model";
+import { ReactProcedure } from "./procedure";
 
 type SearchQueryField = {
   name: string;
@@ -20,9 +23,21 @@ export type SearchQuery = {
 };
 
 export type ModelMap<
-  M extends Record<string, Model<TSchema, TSchema, TSchema, TSchema, TSchema>>,
+  M extends Record<
+    string,
+    Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema>
+  >,
 > = {
   [K in keyof M]: M[K];
+};
+
+export type ReactModelMap<
+  M extends Record<
+    string,
+    Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema>
+  >,
+> = {
+  [K in keyof M]: ReactModel<M[K]>;
 };
 
 export type ProcedureMap<
@@ -31,8 +46,17 @@ export type ProcedureMap<
   [K in keyof P]: P[K];
 };
 
+export type ReactProcedureMap<
+  P extends Record<string, Procedure<TSchema, TSchema>>,
+> = {
+  [K in keyof P]: ReactProcedure<P[K]>;
+};
+
 interface CreateApiOptions<
-  M extends Record<string, Model<TSchema, TSchema, TSchema, TSchema, TSchema>>,
+  M extends Record<
+    string,
+    Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema>
+  >,
   P extends Record<string, Procedure<TSchema, TSchema>>,
 > {
   client: QueryClient;
@@ -43,25 +67,33 @@ interface CreateApiOptions<
 }
 
 export function createApi<
-  M extends Record<string, Model<TSchema, TSchema, TSchema, TSchema, TSchema>>,
+  M extends Record<
+    string,
+    Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema>
+  >,
   P extends Record<string, Procedure<TSchema, TSchema>>,
 >({ models, fns, client, baseUrl, token }: CreateApiOptions<M, P>) {
   return {
     ...Object.keys(models).reduce(
       (acc, key) => ({
         ...acc,
-        [key as keyof M]: models[key as keyof M].bind({
+        [key as keyof M]: new ReactModel({
+          baseUrl: baseUrl,
+          model: models[key as keyof M],
+        }).bind({
           client,
           baseUrl,
           token,
         }),
       }),
-      {} as ModelMap<M>
+      {} as ReactModelMap<M>
     ),
     ...Object.keys(fns).reduce(
       (acc, key) => ({
         ...acc,
-        [key as keyof P]: fns[key as keyof P].bind({
+        [key as keyof P]: new ReactProcedure({
+          procedure: fns[key as keyof P],
+        }).bind({
           client,
           baseUrl,
           token,

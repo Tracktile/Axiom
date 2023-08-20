@@ -15,12 +15,6 @@
   "bin": {
     "axiom": "./cli/index.js"
   },
-  "files": [
-    "common/",
-    "client/",
-    "server",
-    "cli/"
-  ],
   "dependencies": {
     "@koa/cors": "^4.0.0",
     "@koa/router": "^12.0.0",
@@ -34,6 +28,7 @@
     "koa-qs": "^3.0.0",
     "openapi3-ts": "^4.1.2",
     "qs": "^6.11.2",
+    "react": "^18.2.0",
     "title-case": "^3.0.3",
     "ts-command-line-args": "^2.5.1",
     "ts-custom-error": "^3.3.1",
@@ -54,6 +49,7 @@
     "@types/supertest": "^2.0.12",
     "@types/uuid": "^9.0.2",
     "babel-jest": "^29.6.2",
+    "eslint": "^8.47.0",
     "jest": "^29.6.2",
     "prettier": "^3.0.2",
     "supertest": "^6.3.3",

@@ -1,8 +1,8 @@
 import { stringify } from "qs";
 import { Static, TSchema } from "@sinclair/typebox";
+import { MutableRefObject } from "react";
 
 import { ModelId, PaginationParams } from "./model";
-import { MutableRefObject } from "react";
 
 export type QueryParameters = Record<
   string,

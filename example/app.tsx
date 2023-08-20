@@ -2,7 +2,7 @@ import React from "react";
 
 import { User } from "./models/user";
 import { SendEvent } from "./fns/send-event";
-import { createApiProvider, createUseApiHook } from "../src";
+import { createApiProvider, createUseApiHook } from "../src/client";
 
 const models = { User };
 const fns = { SendEvent };
@@ -12,8 +12,9 @@ const ApiProvider = createApiProvider({ models, fns });
 
 function Users() {
   const api = useApi();
+
   const { data: users, isLoading, fetchNextPage } = api.User.query();
-  const { mutate: createUser } = User.create();
+  const { mutate: createUser } = api.User.create();
   const { run: sendEvent } = api.SendEvent.run({ retry: true });
 
   const handleAddUser = () => {
