@@ -1,4 +1,4 @@
-import { Type } from "@sinclair/typebox";
+import { T } from "../common";
 import { testController } from "./test/test-controller";
 import { Controller } from "./controller";
 
@@ -8,8 +8,8 @@ controller.addOperation(
     name: "Test",
     method: "get",
     path: "/",
-    res: Type.Object({
-      hello: Type.String(),
+    res: T.Object({
+      hello: T.String(),
     }),
   },
   async (ctx, next) => {

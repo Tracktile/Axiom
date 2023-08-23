@@ -5,10 +5,12 @@ import {
   ParameterizedContext,
 } from "koa";
 
-import { Type, TSchema, Static } from "@sinclair/typebox";
+import { TSchema, Static } from "@sinclair/typebox";
+
+import { T } from "../common";
 
 export const Nullable = <T extends TSchema>(schema: T) =>
-  Type.Union([schema, Type.Null()]);
+  T.Union([schema, T.Null()]);
 
 export type OperationContext<
   T extends OperationDefinition<

@@ -186,13 +186,13 @@ export async function generate<TContext = Record<string, never>>(
     for (const op of operations) {
       if (!TypeGuard.TObject(op.params)) {
         throw new Error(
-          `Invalid parameters provided to route, must be Type.Object. ${op.name} ${op.method} ${op.path}`
+          `Invalid parameters provided to route, must be T.Object. ${op.name} ${op.method} ${op.path}`
         );
       }
 
       if (!TypeGuard.TObject(op.query)) {
         throw new Error(
-          `Invalid query provided to route, must be Type.Object. ${op.name} ${op.method} ${op.path}`
+          `Invalid query provided to route, must be T.Object. ${op.name} ${op.method} ${op.path}`
         );
       }
 

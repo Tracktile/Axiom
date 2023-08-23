@@ -1,4 +1,4 @@
-import { Type } from "@sinclair/typebox";
+import { T } from "../common";
 import { testController } from "./test/test-controller";
 import { Controller } from "./controller";
 
@@ -10,8 +10,8 @@ describe("Validation", () => {
         name: "Test",
         method: "get",
         path: "/",
-        res: Type.Object({
-          hello: Type.String({ format: "uuid" }),
+        res: T.Object({
+          hello: T.String({ format: "uuid" }),
         }),
       },
       async (ctx, next) => {
@@ -37,8 +37,8 @@ describe("Validation", () => {
         name: "Test",
         method: "post",
         path: "/",
-        req: Type.Object({
-          hello: Type.String({ format: "uuid" }),
+        req: T.Object({
+          hello: T.String({ format: "uuid" }),
         }),
       },
       async (ctx, next) => {
@@ -67,8 +67,8 @@ describe("Validation", () => {
         name: "Test",
         method: "post",
         path: "/:hello",
-        params: Type.Object({
-          hello: Type.String({ format: "uuid" }),
+        params: T.Object({
+          hello: T.String({ format: "uuid" }),
         }),
       },
       async (ctx, next) => {
@@ -96,8 +96,8 @@ describe("Validation", () => {
         name: "Test",
         method: "post",
         path: "/",
-        query: Type.Object({
-          hello: Type.String({ format: "uuid" }),
+        query: T.Object({
+          hello: T.String({ format: "uuid" }),
         }),
       },
       async (ctx, next) => {
@@ -125,10 +125,10 @@ describe("Validation", () => {
         name: "Test",
         method: "get",
         path: "/",
-        res: Type.Object({
-          hello: Type.String(),
-          nested: Type.Object({
-            hello: Type.String(),
+        res: T.Object({
+          hello: T.String(),
+          nested: T.Object({
+            hello: T.String(),
           }),
         }),
       },
@@ -163,10 +163,10 @@ describe("Validation", () => {
         name: "Test",
         method: "post",
         path: "/",
-        req: Type.Object({
-          hello: Type.String(),
-          nested: Type.Object({
-            hello: Type.String(),
+        req: T.Object({
+          hello: T.String(),
+          nested: T.Object({
+            hello: T.String(),
           }),
         }),
       },

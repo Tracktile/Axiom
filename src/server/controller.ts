@@ -1,7 +1,8 @@
-import { Type, TSchema } from "@sinclair/typebox";
+import { TSchema } from "@sinclair/typebox";
 import Router from "@koa/router";
 import { DefaultState, Middleware, Next } from "koa";
 
+import { T } from "../common";
 import { Service } from "./service";
 import { OperationDefinition, OperationContext, Operation } from "./types";
 import { isHTTPError } from "./errors";
@@ -100,10 +101,10 @@ export class Controller<TExtend = Record<string, unknown>> {
       auth: !!base.auth,
       summary: base.name,
       description: base.description ?? "No Description",
-      params: base.params ?? Type.Object({}),
-      query: base.query ?? Type.Object({}),
-      req: base.req ?? Type.Unknown(),
-      res: base.res ?? Type.Unknown(),
+      params: base.params ?? T.Object({}),
+      query: base.query ?? T.Object({}),
+      req: base.req ?? T.Unknown(),
+      res: base.res ?? T.Unknown(),
       middleware: base.middleware ?? [],
       tags: this.tags,
     };
