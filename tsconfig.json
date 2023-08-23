@@ -1,13 +1,14 @@
 {
   "compilerOptions": {
-    "module": "esnext",
+    "module": "ESNext",
     "outDir": ".",
     "declaration": true,
-    "target": "es2015",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "target": "es5",
+    "lib": ["dom", "dom.iterable", "ESNext"],
     "allowJs": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
+    "downlevelIteration": true,
     "allowSyntheticDefaultImports": true,
     "strict": true,
     "forceConsistentCasingInFileNames": true,
@@ -19,7 +20,6 @@
     "experimentalDecorators": true,
     "sourceMap": true,
     "baseUrl": "./src",
-    "incremental": true,
     "typeRoots": ["node_modules/@types"]
   },
   "include": ["src/"],
