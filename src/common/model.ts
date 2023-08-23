@@ -1,4 +1,4 @@
-import { TSchema } from "@sinclair/typebox";
+import { TSchema } from "../common";
 
 export type ModelOptions<
   TModel extends TSchema,

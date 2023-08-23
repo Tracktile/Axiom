@@ -1,9 +1,7 @@
-import { TSchema } from "@sinclair/typebox";
 import { QueryClient } from "@tanstack/react-query";
 import { MutableRefObject } from "react";
 
-import { Model } from "../common/model";
-import { Procedure } from "../common/procedure";
+import { TSchema, Model, Procedure } from "../common";
 
 import { ReactModel } from "./model";
 import { ReactProcedure } from "./procedure";

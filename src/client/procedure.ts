@@ -1,4 +1,3 @@
-import { TSchema, Static } from "@sinclair/typebox";
 import { MutableRefObject, createRef } from "react";
 import {
   QueryClient,
@@ -6,6 +5,7 @@ import {
   useMutation,
 } from "@tanstack/react-query";
 
+import { Static, TSchema } from "../common";
 import { buildResourcePath, request } from "./request";
 import { Procedure } from "common/procedure";
 

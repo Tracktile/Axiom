@@ -10,9 +10,8 @@ import {
   UseQueryOptions,
   DefinedUseInfiniteQueryResult,
 } from "@tanstack/react-query";
-import { TSchema, Static } from "@sinclair/typebox";
 
-import { Model } from "../common/model";
+import { Static, TSchema, Model } from "../common";
 
 import {
   buildResourcePath,

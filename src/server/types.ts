@@ -5,9 +5,7 @@ import {
   ParameterizedContext,
 } from "koa";
 
-import { TSchema, Static } from "@sinclair/typebox";
-
-import { T } from "../common";
+import { T, Static, TSchema } from "../common";
 
 export const Nullable = <T extends TSchema>(schema: T) =>
   T.Union([schema, T.Null()]);

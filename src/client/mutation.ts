@@ -4,7 +4,7 @@ import {
   QueryKey,
   useMutation,
 } from "@tanstack/react-query";
-import { Static, TSchema } from "@sinclair/typebox";
+import { Static, TSchema } from "../common";
 import { ModelId } from "./model";
 
 type TContext<TData = undefined> = { previous?: TData };

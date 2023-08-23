@@ -1,5 +1,4 @@
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
-import { TSchema } from "@sinclair/typebox";
 import React, {
   createContext,
   PropsWithChildren,
@@ -7,8 +6,7 @@ import React, {
   useContext,
 } from "react";
 
-import { Model } from "../common/model";
-import { Procedure } from "../common/procedure";
+import { TSchema, Model, Procedure } from "../common";
 import {
   createApi,
   ModelMap,

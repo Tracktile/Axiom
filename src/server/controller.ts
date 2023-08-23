@@ -1,8 +1,7 @@
-import { TSchema } from "@sinclair/typebox";
 import Router from "@koa/router";
 import { DefaultState, Middleware, Next } from "koa";
 
-import { T } from "../common";
+import { T, TSchema } from "../common";
 import { Service } from "./service";
 import { OperationDefinition, OperationContext, Operation } from "./types";
 import { isHTTPError } from "./errors";
