@@ -406,7 +406,6 @@ export class ReactModel<TModel extends Model<any, any, any, any, any, any>> {
   }
 
   update(
-    id: ModelId,
     options: AxiomModelMutationOptions<
       TModel["schemas"]["model"],
       TModel["schemas"]["update"]
@@ -423,7 +422,6 @@ export class ReactModel<TModel extends Model<any, any, any, any, any, any>> {
   }
 
   remove(
-    id: ModelId,
     options: AxiomModelMutationOptions<
       TModel["schemas"]["model"],
       TModel["schemas"]["model"]
