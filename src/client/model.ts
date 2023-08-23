@@ -439,11 +439,21 @@ export class ReactModel<TModel extends Model<any, any, any, any, any, any>> {
     });
   }
 
-  invalidate() {}
+  invalidate() {
+    this.client?.invalidateQueries({ queryKey: this.modelKeys.search() });
+  }
 
-  invalidateById(id: ModelId) {}
+  invalidateById(id: ModelId) {
+    this.client?.invalidateQueries({ queryKey: this.modelKeys.get(id) });
+  }
 
-  invalidateWhere(fn: (model: TModel) => boolean) {}
+  read(): Static<TModel["schemas"]["model"]>[] | undefined {
+    return this.client?.getQueryData(this.modelKeys.search());
+  }
+
+  readOne(id: ModelId): Static<TModel["schemas"]["model"]> | undefined {
+    return this.client?.getQueryData(this.modelKeys.get(id));
+  }
 }
 
 export type PaginationParams = {

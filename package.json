@@ -1,13 +1,16 @@
 {
   "name": "@tracktile/axiom",
-  "version": "1.0.0-beta.5",
-  "main": "./common/index.js",
-  "types": "./common/index.d.ts",
+  "version": "1.0.0-beta.9",
+  "description": "Dead simple, Opinionated, and Type Safe framework for building APIs with React Frontends.",
+  "homepage": "https://github.com/Tracktile/Axiom",
+  "license": "MIT",
+  "author": "Jarred Kenny <jarred.kenny@tracktile.io (https://tracktile.io/)",
+  "main": "./index.js",
+  "types": "./index.d.ts",
   "repository": {
     "type": "git",
     "url": "https://github.com/Tracktile/Axiom.git"
   },
-  "license": "MIT",
   "scripts": {
     "build": "tsc",
     "test": "jest -c=./package.json src.*test.ts --verbose --coverage --forceExit"
@@ -15,6 +18,15 @@
   "bin": {
     "axiom": "./cli/index.js"
   },
+  "files": [
+    "common",
+    "cli",
+    "client",
+    "server",
+    "index.js",
+    "index.d.ts",
+    "index.js.map"
+  ],
   "dependencies": {
     "@koa/cors": "^4.0.0",
     "@koa/router": "^12.0.0",
@@ -22,6 +34,7 @@
     "@sinclair/typebox": "^0.31.1",
     "@tanstack/react-query": "^5.0.0-beta.16",
     "@vendia/serverless-express": "^4.10.4",
+    "hono": "^3.5.0",
     "kebab-case": "^1.0.2",
     "koa": "^2.14.2",
     "koa-bodyparser": "^4.4.1",

@@ -2776,6 +2776,11 @@ hexoid@^1.0.0:
   resolved "https://registry.yarnpkg.com/hexoid/-/hexoid-1.0.0.tgz#ad10c6573fb907de23d9ec63a711267d9dc9bc18"
   integrity sha512-QFLV0taWQOZtvIRIAdBChesmogZrtuXvVWsFHZTk2SU+anspqZ2vMnoLg7IE1+Uk16N19APic1BuF8bC8c2m5g==
 
+hono@^3.5.0:
+  version "3.5.0"
+  resolved "https://registry.yarnpkg.com/hono/-/hono-3.5.0.tgz#8bba91b7d1a4f26db22cd1b013032b8a38f97bab"
+  integrity sha512-0eJT6F+TRovENdANDubzri3c1oVEjbTgrQvXrcUKjFV6ZElNWNSrrHZIQE5CPwRTddsUdPjkgguuLYw90npC+w==
+
 html-escaper@^2.0.0:
   version "2.0.2"
   resolved "https://registry.yarnpkg.com/html-escaper/-/html-escaper-2.0.2.tgz#dfd60027da36a36dfcbe236262c00a5822681453"

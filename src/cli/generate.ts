@@ -5,9 +5,9 @@ import { TSchema, TypeGuard } from "@sinclair/typebox";
 import convert from "@openapi-contrib/json-schema-to-openapi-schema";
 import * as oa from "openapi3-ts";
 
-import { OperationDefinition } from "./types";
-import { Service } from "./service";
-import { CombinedService, isCombinedService } from "./combined-service";
+import { OperationDefinition } from "../server/types";
+import { Service } from "../server/service";
+import { CombinedService, isCombinedService } from "../server/combined-service";
 
 export type Services<TContext = Record<string, never>> = {
   resource: string;
