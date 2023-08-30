@@ -7,14 +7,7 @@ import React, {
 } from "react";
 
 import { TSchema, Model, Procedure } from "../common";
-import {
-  createApi,
-  ModelMap,
-  ReactModelMap,
-  ProcedureMap,
-  ReactProcedureMap,
-} from "./api";
-import { ReactModel } from "./model";
+import { createApi, ReactModelMap, ReactProcedureMap } from "./api";
 
 type ApiContextData<
   M extends Record<
@@ -26,7 +19,10 @@ type ApiContextData<
   api: ReactModelMap<M> & ReactProcedureMap<P>;
 };
 
-const ApiContext = createContext<ApiContextData<{}, {}> | null>(null);
+const ApiContext = createContext<ApiContextData<
+  Record<string, Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema>>,
+  Record<string, Procedure<TSchema, TSchema>>
+> | null>(null);
 
 type ApiProviderProps<
   M extends Record<

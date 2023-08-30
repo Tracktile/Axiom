@@ -56,10 +56,11 @@ export class ReactProcedure<TProcedure extends Procedure<any, any>> {
         params: Static<TProcedure["params"]>
       ): Promise<Static<TProcedure["result"]>> => {
         const [resp] = await request<Static<TProcedure["result"]>>(
-          buildResourcePath(this.baseUrl, this.procedure.resource),
+          buildResourcePath(this.baseUrl, this.procedure.resource, params),
           {
             method: this.procedure.method,
             body: params,
+            token: this.token.current,
           }
         );
         return resp;

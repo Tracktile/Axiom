@@ -2,7 +2,7 @@ import { stringify } from "qs";
 import { MutableRefObject } from "react";
 
 import { Static, TSchema } from "../common";
-import { ModelId, PaginationParams } from "./model";
+import { PaginationParams } from "./model";
 
 export type QueryParameters = Record<
   string,
@@ -17,14 +17,19 @@ interface APIRequestParams<T> {
   token?: string | null;
 }
 
-export function buildResourcePath(baseUrl: string, resource: string) {
+export function buildResourcePath<
+  TParams extends Record<string, string | number>,
+>(baseUrl: string, resource: string, params: TParams = {} as TParams) {
   const cleanBaseUrl = baseUrl.endsWith("/")
     ? baseUrl.substr(0, baseUrl.length - 1)
     : baseUrl;
   const cleanResource = resource.startsWith("/")
     ? resource.substr(1)
     : resource;
-  return `${cleanBaseUrl}/${cleanResource}`;
+  const url = `${cleanBaseUrl}/${cleanResource}`;
+  return Object.entries(params).reduce((acc, [key, val]) => {
+    return acc.replace(`:${key}`, val.toString());
+  }, url);
 }
 
 export async function request<TRequestBody, TResponseBody = TRequestBody>(
@@ -134,7 +139,7 @@ export function createGetRequestFn<T extends TSchema>({
   token,
   ...options
 }: RequestCreatorOptions) {
-  return async function get(id: ModelId) {
+  return async function get(id: string | number) {
     const [resp] = await request<Static<T>>(`${resourcePath}/${id}`, {
       method: "get",
       token: token.current,
@@ -160,11 +165,11 @@ export function createCreateRequestFn<T extends TSchema>({
 
 export function createUpdateRequestFn<T extends TSchema>({
   resourcePath,
-  idKey = "id",
+  idKey,
   token,
   ...options
-}: RequestCreatorOptions & { idKey: keyof Static<T> | "id" }) {
-  return async function update(body: Static<T> & { id: typeof idKey }) {
+}: RequestCreatorOptions & { idKey: keyof Static<T> }) {
+  return async function update(body: Static<T>) {
     const [resp] = await request<Static<T>>(`${resourcePath}/${body[idKey]}`, {
       method: "put",
       body,
@@ -177,11 +182,14 @@ export function createUpdateRequestFn<T extends TSchema>({
 
 export function createRemoveRequestFn<T extends TSchema>({
   resourcePath,
+  idKey,
   token,
   ...options
-}: RequestCreatorOptions) {
-  return async function remove(body: Static<T> & { id: ModelId }) {
-    await request<Static<T>, void>(`${resourcePath}/${body.id}`, {
+}: RequestCreatorOptions & {
+  idKey: keyof Static<T>;
+}) {
+  return async function remove(body: Static<T>) {
+    await request<Static<T>, void>(`${resourcePath}/${body[idKey]}`, {
       method: "delete",
       body,
       token: token.current,

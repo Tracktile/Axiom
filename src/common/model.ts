@@ -1,4 +1,4 @@
-import { TSchema } from "../common";
+import { TSchema, Static } from "../common";
 
 export type ModelOptions<
   TModel extends TSchema,
@@ -10,7 +10,7 @@ export type ModelOptions<
 > = {
   name: string;
   resource: string;
-  idKey: Exclude<keyof TModel, symbol>;
+  idKey: Exclude<keyof Static<TModel>, symbol>;
   model: TModel;
   create: TCreate;
   update: TUpdate;
@@ -29,7 +29,7 @@ export class Model<
 > {
   name: string;
   resource: string;
-  idKey: Exclude<keyof TModel, symbol>;
+  idKey: Exclude<keyof Static<TModel>, symbol>;
   schemas: {
     model: TModel;
     create: TCreate;

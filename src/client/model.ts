@@ -3,12 +3,9 @@ import {
   QueryClient,
   useQuery,
   useInfiniteQuery,
-  UseQueryResult,
-  UseMutationResult,
   useMutation,
   UseMutationOptions,
   UseQueryOptions,
-  DefinedUseInfiniteQueryResult,
 } from "@tanstack/react-query";
 
 import { Static, TSchema, Model } from "../common";
@@ -23,7 +20,6 @@ import {
 } from "./request";
 
 import { SearchQuery } from "./api";
-import { DefinedInitialDataInfiniteOptions } from "@tanstack/react-query/build/legacy/infiniteQueryOptions";
 
 type AxiomQueryOptions = {
   offset?: number;
@@ -37,36 +33,10 @@ type AxiomModelGetOptions<TModel extends TSchema> = UseQueryOptions<
   Error
 >;
 
-// type AxiomModelQueryOptions<TModel extends TSchema> =
-//   DefinedInitialDataInfiniteOptions<
-//     {
-//       results: Static<TModel>[];
-//       total: number;
-//       offset: number;
-//       limit: number;
-//     },
-//     Error
-//   >;
-
-type AxiomModelGetResult<TModel extends TSchema> = UseQueryResult<
-  Static<TModel>,
-  Error
->;
-
-// type AxiomModelQueryResult<TModel extends TSchema> =
-//   DefinedUseInfiniteQueryResult<Static<TModel>, Error>;
-
 type AxiomModelMutationOptions<
   TModal extends TSchema,
   TArgs extends TSchema,
 > = UseMutationOptions<Static<TModal>, unknown, Static<TArgs>, unknown>;
-
-// type AxiomModelMutationResult<
-//   TModal extends TSchema,
-//   TArgs extends TSchema,
-// > = UseMutationResult<Static<TModal>, unknown, Static<TArgs>, unknown>;
-
-export type ModelId = string | number;
 
 type TContext<TData = undefined> = { previous?: TData };
 
@@ -100,10 +70,10 @@ export class ReactModel<TModel extends Model<any, any, any, any, any, any>> {
       this.model.name,
       ...(params ? [params] : []),
     ],
-    get: (id: ModelId) => [this.model.name, id],
+    get: (id: any) => [this.model.name, id],
     create: () => [this.model.name, "create"],
-    update: (id?: ModelId) => [this.model.name, id, "update"],
-    remove: (id?: ModelId) => [this.model.name, id, "remove"],
+    update: (id?: any) => [this.model.name, id, "update"],
+    remove: (id?: any) => [this.model.name, id, "remove"],
   };
 
   private bindCreateMutation() {
@@ -124,29 +94,17 @@ export class ReactModel<TModel extends Model<any, any, any, any, any, any>> {
           throw new Error("Client is not bound");
         }
         await this.client.cancelQueries({
-          queryKey: this.modelKeys.get(
-            (item as Record<string, ModelId>)[this.model.idKey] as ModelId
-          ),
+          queryKey: this.modelKeys.get(item[this.model.idKey]),
         });
         const previous = this.client.getQueryData<
           Static<TModel["schemas"]["model"]>
-        >(
-          this.modelKeys.get(
-            (item as Record<string, ModelId>)[
-              this.model.idKey as ModelId
-            ] as ModelId
-          )
-        );
+        >(this.modelKeys.get(item[this.model.idKey]));
         this.client.setQueryData(
-          this.modelKeys.get(
-            (item as Record<string, ModelId>)[
-              this.model.idKey as ModelId
-            ] as ModelId
-          ),
+          this.modelKeys.get(item[this.model.idKey]),
           item
         );
         this.client.setQueryData<Static<TModel["schemas"]["model"]>>(
-          this.modelKeys.get(item[this.model.idKey] as ModelId),
+          this.modelKeys.get(item[this.model.idKey]),
           () => item
         );
         return { previous };
@@ -156,7 +114,7 @@ export class ReactModel<TModel extends Model<any, any, any, any, any, any>> {
           throw new Error("Client is not bound");
         }
         this.client.invalidateQueries({
-          queryKey: this.modelKeys.get(item[this.model.idKey] as ModelId),
+          queryKey: this.modelKeys.get(item[this.model.idKey]),
         });
       },
       onError: (
@@ -169,13 +127,11 @@ export class ReactModel<TModel extends Model<any, any, any, any, any, any>> {
             throw new Error("Client is not bound");
           }
           this.client.setQueryData(
-            this.modelKeys.get(
-              (item as Record<string, ModelId>)[this.model.idKey] as ModelId
-            ),
+            this.modelKeys.get(item[this.model.idKey]),
             context.previous
           );
           this.client.setQueryData<Static<TModel["schemas"]["model"]>>(
-            this.modelKeys.get(item[this.model.idKey] as ModelId),
+            this.modelKeys.get(item[this.model.idKey]),
             () => undefined
           );
         }
@@ -188,11 +144,7 @@ export class ReactModel<TModel extends Model<any, any, any, any, any, any>> {
       throw new Error("Client is not bound");
     }
     this.client.setMutationDefaults(this.modelKeys.update(), {
-      mutationFn: (
-        item: Static<TModel["schemas"]["model"]> & {
-          id: "id" | keyof Static<TModel["schemas"]["model"], []>;
-        }
-      ) => {
+      mutationFn: (item: Static<TModel["schemas"]["model"]>) => {
         return createUpdateRequestFn<TModel["schemas"]["model"]>({
           resourcePath: buildResourcePath(this.baseUrl, this.model.resource),
           idKey: this.model.idKey,
@@ -206,21 +158,13 @@ export class ReactModel<TModel extends Model<any, any, any, any, any, any>> {
           throw new Error("Client is not bound");
         }
         await this.client.cancelQueries({
-          queryKey: this.modelKeys.get(
-            (item as Record<string, ModelId>)[this.model.idKey] as ModelId
-          ),
+          queryKey: this.modelKeys.get(item[this.model.idKey]),
         });
         const previous = this.client.getQueryData<
           Static<TModel["schemas"]["model"]>
-        >(
-          this.modelKeys.get(
-            (item as Record<string, ModelId>)[this.model.idKey] as ModelId
-          )
-        );
+        >(this.modelKeys.get(item[this.model.idKey]));
         this.client.setQueryData(
-          this.modelKeys.get(
-            (item as Record<string, ModelId>)[this.model.idKey] as ModelId
-          ),
+          this.modelKeys.get(item[this.model.idKey]),
           item
         );
         return { previous };
@@ -236,9 +180,7 @@ export class ReactModel<TModel extends Model<any, any, any, any, any, any>> {
             throw new Error("Client is not bound");
           }
           this.client.setQueryData(
-            this.modelKeys.get(
-              (item as Record<string, ModelId>)[this.model.idKey] as ModelId
-            ),
+            this.modelKeys.get(item[this.model.idKey]),
             context.previous
           );
         }
@@ -252,12 +194,11 @@ export class ReactModel<TModel extends Model<any, any, any, any, any, any>> {
     }
     this.client.setMutationDefaults(this.modelKeys.remove(), {
       retry: false,
-      mutationFn: (
-        item: Static<TModel["schemas"]["model"]> & { id: ModelId }
-      ) =>
-        createRemoveRequestFn({
+      mutationFn: (item: Static<TModel["schemas"]["model"]>) =>
+        createRemoveRequestFn<Static<TModel["schemas"]["model"]>>({
           resourcePath: buildResourcePath(this.baseUrl, this.model.resource),
           token: this.token,
+          idKey: this.model.idKey,
         })(item),
       onMutate: async (
         item: Static<TModel["schemas"]["model"]>
@@ -266,22 +207,14 @@ export class ReactModel<TModel extends Model<any, any, any, any, any, any>> {
           throw new Error("Client is not bound");
         }
         await this.client.cancelQueries({
-          queryKey: this.modelKeys.remove(
-            (item as Record<string, ModelId>)[this.model.idKey] as ModelId
-          ),
+          queryKey: this.modelKeys.remove(item[this.model.idKey]),
         });
 
         const previous = this.client.getQueryData<
           Static<TModel["schemas"]["model"]>
-        >(
-          this.modelKeys.get(
-            (item as Record<string, ModelId>)[this.model.idKey] as ModelId
-          )
-        );
+        >(this.modelKeys.get(item[this.model.idKey]));
         this.client.setQueryData(
-          this.modelKeys.get(
-            (item as Record<string, ModelId>)[this.model.idKey] as ModelId
-          ),
+          this.modelKeys.get(item[this.model.idKey]),
           null
         );
         return { previous };
@@ -297,9 +230,7 @@ export class ReactModel<TModel extends Model<any, any, any, any, any, any>> {
             throw new Error("Client is not bound");
           }
           this.client.setQueryData(
-            this.modelKeys.get(
-              (item as Record<string, ModelId>)[this.model.idKey] as ModelId
-            ),
+            this.modelKeys.get(item[this.model.idKey]),
             context.previous
           );
         }
@@ -318,10 +249,10 @@ export class ReactModel<TModel extends Model<any, any, any, any, any, any>> {
   }
 
   get(
-    id: ModelId,
+    id: string | number,
     options: Partial<AxiomModelGetOptions<TModel["schemas"]["model"]>> = {}
-  ): AxiomModelGetResult<TModel["schemas"]["model"]> {
-    return useQuery<Static<TModel["schemas"]["model"]>>({
+  ) {
+    return useQuery({
       ...options,
       queryKey: this.modelKeys.get(id),
       enabled: !!id,
@@ -330,7 +261,9 @@ export class ReactModel<TModel extends Model<any, any, any, any, any, any>> {
           resourcePath: buildResourcePath(this.baseUrl, this.model.resource),
           token: this.token,
         })(id),
-      initialData: [] as Static<TModel["schemas"]["model"]>[] & undefined,
+      select(data) {
+        return { hello: "world" };
+      },
     });
   }
 
@@ -342,7 +275,6 @@ export class ReactModel<TModel extends Model<any, any, any, any, any, any>> {
   }: AxiomQueryOptions = {}) {
     const queryFn = async ({ pageParam = 0 }) => {
       const offset = offsetArg ?? (pageParam as number);
-
       const { results, total } = await createSearchRequestFn<
         TModel["schemas"]["model"]
       >({
@@ -372,19 +304,28 @@ export class ReactModel<TModel extends Model<any, any, any, any, any, any>> {
         pages: [],
         pageParams: [],
       },
-      defaultPageParam: 0,
-      getNextPageParam: (lastPage, allPages, lastPageParam) => {
+      initialPageParam: 0,
+      getNextPageParam: (lastPage) => {
         return (lastPage?.offset ?? 0) + lastPage?.results?.length ?? 0;
       },
-      getPreviousPageParam: (firstPage, allPages, firstPageParam) => {
+      getPreviousPageParam: (firstPage) => {
         return (firstPage?.offset ?? 0) - firstPage?.results?.length ?? 0;
       },
+      // select: ({ pages, pageParams }) => {
+      //   return {
+      //     pages: pages.map((page) => ({
+      //       ...page,
+      //       results: page.results.map((d) => this.model.transform(d)),
+      //     })),
+      //     pageParams: pageParams,
+      //   };
+      // },
     });
     const { data, ...queryResult } = query;
     return {
       ...queryResult,
       data: data?.pages.map((page) => page.results).flat() ?? [],
-      pages: data.pages,
+      pages: data?.pages ?? [],
     };
   }
 
@@ -440,7 +381,7 @@ export class ReactModel<TModel extends Model<any, any, any, any, any, any>> {
     this.client?.invalidateQueries({ queryKey: this.modelKeys.search() });
   }
 
-  invalidateById(id: ModelId) {
+  invalidateById(id: keyof Static<TModel["schemas"]["model"]>) {
     this.client?.invalidateQueries({ queryKey: this.modelKeys.get(id) });
   }
 
@@ -448,7 +389,9 @@ export class ReactModel<TModel extends Model<any, any, any, any, any, any>> {
     return this.client?.getQueryData(this.modelKeys.search());
   }
 
-  readOne(id: ModelId): Static<TModel["schemas"]["model"]> | undefined {
+  readOne(
+    id: keyof Static<TModel["schemas"]["model"]>
+  ): Static<TModel["schemas"]["model"]> | undefined {
     return this.client?.getQueryData(this.modelKeys.get(id));
   }
 }

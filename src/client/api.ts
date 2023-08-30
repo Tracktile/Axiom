@@ -70,12 +70,18 @@ export function createApi<
     Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema>
   >,
   P extends Record<string, Procedure<TSchema, TSchema>>,
->({ models, fns, client, baseUrl, token }: CreateApiOptions<M, P>) {
+>({
+  models,
+  fns,
+  client,
+  baseUrl,
+  token,
+}: CreateApiOptions<M, P>): ReactModelMap<M> & ReactProcedureMap<P> {
   return {
     ...Object.keys(models).reduce(
       (acc, key) => ({
         ...acc,
-        [key as keyof M]: new ReactModel({
+        [key as keyof M]: new ReactModel<M[keyof M]>({
           baseUrl: baseUrl,
           model: models[key as keyof M],
         }).bind({
@@ -97,7 +103,7 @@ export function createApi<
           token,
         }),
       }),
-      {} as P
+      {} as ReactProcedureMap<P>
     ),
   };
 }

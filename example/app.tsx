@@ -14,6 +14,7 @@ function Users() {
   const api = useApi();
 
   const { data: users, isLoading, fetchNextPage } = api.User.query();
+  const { data: user } = api.User.get(1);
   const { mutate: createUser } = api.User.create();
   const { run: sendEvent } = api.SendEvent.run({ retry: true });
 

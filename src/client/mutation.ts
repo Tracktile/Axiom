@@ -5,7 +5,6 @@ import {
   useMutation,
 } from "@tanstack/react-query";
 import { Static, TSchema } from "../common";
-import { ModelId } from "./model";
 
 type TContext<TData = undefined> = { previous?: TData };
 
@@ -24,9 +23,9 @@ export function replaceInWithBy<TData>(
 
 interface createCreateMutationOptions<T extends TSchema> {
   client: QueryClient;
-  idKey?: keyof Static<T>;
+  idKey: Exclude<keyof Static<T>, symbol>;
   createFn: (item: Static<T>) => Promise<Static<T>>;
-  itemCacheKey: (id: ModelId) => QueryKey;
+  itemCacheKey: (id: any) => QueryKey;
   itemIndexCacheKey: () => QueryKey;
 }
 
@@ -34,7 +33,7 @@ export function createCreateMutation<T extends TSchema>(
   name: string,
   {
     client,
-    idKey = "id" as keyof Static<T>,
+    idKey,
     createFn,
     itemCacheKey,
     itemIndexCacheKey,
@@ -47,38 +46,25 @@ export function createCreateMutation<T extends TSchema>(
     },
     onMutate: async (item: Static<T>): Promise<TContext<Static<T>>> => {
       await client.cancelQueries({
-        queryKey: itemCacheKey(
-          (item as Record<string, ModelId>)[idKey] as ModelId
-        ),
+        queryKey: itemCacheKey(item[idKey]),
       });
-      const previous = client.getQueryData<T>(
-        itemCacheKey((item as Record<string, ModelId>)[idKey] as ModelId)
-      );
-      client.setQueryData(
-        itemCacheKey((item as Record<string, ModelId>)[idKey] as ModelId),
-        item
-      );
+      const previous = client.getQueryData<T>(itemCacheKey(item[idKey]));
+      client.setQueryData(itemCacheKey(item[idKey]), item);
       client.setQueryData<Static<T>[]>(itemIndexCacheKey(), (oldData = []) =>
         replaceInWithBy(oldData, item, idKey as keyof Static<T>)
       );
-      client.setQueryData<Static<T>>(
-        itemCacheKey(item[idKey] as ModelId),
-        () => item
-      );
+      client.setQueryData<Static<T>>(itemCacheKey(item[idKey]), () => item);
       return { previous };
     },
     onSuccess: (item: Static<T>) => {
       client.invalidateQueries({ queryKey: itemIndexCacheKey() });
       client.invalidateQueries({
-        queryKey: itemCacheKey(item[idKey] as ModelId),
+        queryKey: itemCacheKey(item[idKey]),
       });
     },
     onError: (_err: Error, item: Static<T>, context?: TContext<Static<T>>) => {
       if (!!context?.previous) {
-        client.setQueryData(
-          itemCacheKey((item as Record<string, ModelId>)[idKey] as ModelId),
-          context.previous
-        );
+        client.setQueryData(itemCacheKey(item[idKey]), context.previous);
         client.setQueryData<Static<T>[]>(itemIndexCacheKey(), (oldData = []) =>
           context.previous
             ? replaceInWithBy(
@@ -89,7 +75,7 @@ export function createCreateMutation<T extends TSchema>(
             : []
         );
         client.setQueryData<Static<T>>(
-          itemCacheKey(item[idKey] as ModelId),
+          itemCacheKey(item[idKey]),
           () => undefined
         );
       }
@@ -104,11 +90,9 @@ export function createCreateMutation<T extends TSchema>(
 
 interface createUpdateMutationOptions<T extends TSchema> {
   client: QueryClient;
-  idKey?: keyof Static<T> | "id";
-  updateFn: (
-    body: Static<T, []> & { id: "id" | keyof Static<T, []> }
-  ) => Promise<Static<T, []>>;
-  itemCacheKey: (id: ModelId) => QueryKey;
+  idKey: keyof Static<T>;
+  updateFn: (body: Static<T, []>) => Promise<Static<T, []>>;
+  itemCacheKey: (id: any) => QueryKey;
   itemIndexCacheKey: () => QueryKey;
 }
 
@@ -116,7 +100,7 @@ export function createUpdateMutation<T extends TSchema>(
   name: string,
   {
     client,
-    idKey = "id",
+    idKey,
     updateFn,
     itemCacheKey,
     itemIndexCacheKey,
@@ -124,28 +108,19 @@ export function createUpdateMutation<T extends TSchema>(
 ) {
   const mutationName = `${name}_update`;
   client.setMutationDefaults([mutationName], {
-    mutationFn: (item: Static<T, []> & { id: "id" | keyof Static<T, []> }) => {
+    mutationFn: (item: Static<T, []>) => {
       return updateFn(item);
     },
     onMutate: async (item: Static<T>): Promise<TContext<Static<T>>> => {
       await client.cancelQueries({
-        queryKey: itemCacheKey(
-          (item as Record<string, ModelId>)[idKey] as ModelId
-        ),
+        queryKey: itemCacheKey(item[idKey]),
       });
-      const previous = client.getQueryData<T>(
-        itemCacheKey((item as Record<string, ModelId>)[idKey] as ModelId)
-      );
-      client.setQueryData(
-        itemCacheKey((item as Record<string, ModelId>)[idKey] as ModelId),
-        item
-      );
+      const previous = client.getQueryData<T>(itemCacheKey(item[idKey]));
+      client.setQueryData(itemCacheKey(item[idKey]), item);
       client.setQueryData<Static<T>[]>(itemIndexCacheKey(), (oldData = []) =>
         oldData.map((oldItem) => {
-          const itemId = (item as Record<string, ModelId>)[idKey] as ModelId;
-          const oldItemId = (oldItem as Record<string, ModelId>)[
-            idKey
-          ] as ModelId;
+          const itemId = item[idKey];
+          const oldItemId = oldItem[idKey];
           return itemId === oldItemId ? item : oldItem;
         })
       );
@@ -156,10 +131,7 @@ export function createUpdateMutation<T extends TSchema>(
     },
     onError: (_err: Error, item: Static<T>, context?: TContext<Static<T>>) => {
       if (!!context?.previous) {
-        client.setQueryData(
-          itemCacheKey((item as Record<string, ModelId>)[idKey] as ModelId),
-          context.previous
-        );
+        client.setQueryData(itemCacheKey(item[idKey]), context.previous);
         client.setQueryData<Static<T>[]>(itemIndexCacheKey(), (oldData = []) =>
           context.previous
             ? replaceInWithBy(
@@ -181,9 +153,9 @@ export function createUpdateMutation<T extends TSchema>(
 
 interface DeletePersistMutationOptions<T extends TSchema> {
   client: QueryClient;
-  idKey?: keyof Static<T> | "id";
-  deleteFn: (item: Static<T> & { id: ModelId }) => Promise<Static<T>>;
-  itemCacheKey: (id: ModelId) => QueryKey;
+  idKey: keyof Static<T>;
+  deleteFn: (item: Static<T>) => Promise<Static<T>>;
+  itemCacheKey: (id: any) => QueryKey;
   itemIndexCacheKey: () => QueryKey;
 }
 
@@ -191,7 +163,7 @@ export function createDeleteMutation<T extends TSchema>(
   name: string,
   {
     client,
-    idKey = "id",
+    idKey,
     itemCacheKey,
     itemIndexCacheKey,
     deleteFn,
@@ -200,27 +172,16 @@ export function createDeleteMutation<T extends TSchema>(
   const mutationName = `${name}_delete`;
   client.setMutationDefaults([mutationName], {
     retry: false,
-    mutationFn: (item: Static<T> & { id: ModelId }) => deleteFn(item),
+    mutationFn: (item: Static<T>) => deleteFn(item),
     onMutate: async (item: Static<T>): Promise<TContext<Static<T>>> => {
       await client.cancelQueries({
-        queryKey: itemCacheKey(
-          (item as Record<string, ModelId>)[idKey] as ModelId
-        ),
+        queryKey: itemCacheKey(item[idKey]),
       });
 
-      const previous = client.getQueryData<T>(
-        itemCacheKey((item as Record<string, ModelId>)[idKey] as ModelId)
-      );
-      client.setQueryData(
-        itemCacheKey((item as Record<string, ModelId>)[idKey] as ModelId),
-        null
-      );
+      const previous = client.getQueryData<T>(itemCacheKey(item[idKey]));
+      client.setQueryData(itemCacheKey(item[idKey]), null);
       client.setQueryData<Static<T>[]>(itemIndexCacheKey(), (oldData = []) =>
-        oldData.filter(
-          (old) =>
-            (old as Record<typeof idKey, ModelId>)[idKey] !==
-            ((item as Record<typeof idKey, ModelId>)[idKey] as ModelId)
-        )
+        oldData.filter((old) => old[idKey] !== item[idKey])
       );
       return { previous };
     },
@@ -229,10 +190,7 @@ export function createDeleteMutation<T extends TSchema>(
     },
     onError: (_err: Error, item: Static<T>, context?: TContext<Static<T>>) => {
       if (typeof context?.previous !== "undefined") {
-        client.setQueryData(
-          itemCacheKey((item as Record<string, ModelId>)[idKey] as ModelId),
-          context.previous
-        );
+        client.setQueryData(itemCacheKey(item[idKey]), context.previous);
         client.setQueryData<Static<T>[]>(itemIndexCacheKey(), (oldData = []) =>
           context.previous
             ? replaceInWithBy(

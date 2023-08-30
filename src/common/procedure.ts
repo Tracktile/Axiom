@@ -8,6 +8,7 @@ export interface ProcedureOptions<
   resource: string;
   params: TParams;
   result: TResult;
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 }
 
 export class Procedure<TParams extends TSchema, TResult extends TSchema> {
@@ -22,6 +23,7 @@ export class Procedure<TParams extends TSchema, TResult extends TSchema> {
     this.resource = options.resource;
     this.params = options.params;
     this.result = options.result;
+    this.method = options.method || "GET";
   }
 }
 
