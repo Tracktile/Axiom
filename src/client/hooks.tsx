@@ -12,7 +12,7 @@ import { createApi, ReactModelMap, ReactProcedureMap } from "./api";
 type ApiContextData<
   M extends Record<
     string,
-    Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema>
+    Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema, any>
   >,
   P extends Record<string, Procedure<TSchema, TSchema>>,
 > = {
@@ -20,14 +20,17 @@ type ApiContextData<
 };
 
 const ApiContext = createContext<ApiContextData<
-  Record<string, Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema>>,
+  Record<
+    string,
+    Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema, any>
+  >,
   Record<string, Procedure<TSchema, TSchema>>
 > | null>(null);
 
 type ApiProviderProps<
   M extends Record<
     string,
-    Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema>
+    Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema, any>
   >,
   P extends Record<string, Procedure<TSchema, TSchema>>,
 > = {
@@ -41,7 +44,7 @@ type ApiProviderProps<
 function ApiProvider<
   M extends Record<
     string,
-    Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema>
+    Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema, any>
   >,
   P extends Record<string, Procedure<TSchema, TSchema>>,
 >({
@@ -70,7 +73,7 @@ function ApiProvider<
 }
 
 export function createApiProvider<
-  M extends Record<string, Model<any, any, any, any, any, any>>,
+  M extends Record<string, Model<any, any, any, any, any, any, any>>,
   P extends Record<string, Procedure<any, any>>,
 >({ models = {} as M, fns = {} as P }: { models?: M; fns?: P }) {
   return function ApiProviderHook(
@@ -83,7 +86,7 @@ export function createApiProvider<
 function useApi<
   M extends Record<
     string,
-    Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema>
+    Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema, any>
   > = {},
   P extends Record<string, Procedure<TSchema, TSchema>> = {},
 >() {
@@ -98,7 +101,7 @@ function useApi<
 }
 
 export function createUseApiHook<
-  M extends Record<string, Model<any, any, any, any, any, any>>,
+  M extends Record<string, Model<any, any, any, any, any, any, any>>,
   P extends Record<string, Procedure<any, any>>,
 >({}: { models?: M; fns?: P }) {
   return function useApiHook() {

@@ -2,11 +2,12 @@ import { TSchema, Static } from "../common";
 
 export type ModelOptions<
   TModel extends TSchema,
-  TCreate extends TSchema = TModel,
-  TUpdate extends TSchema = TModel,
-  TDelete extends TSchema = TModel,
-  TQuery extends TSchema = TModel,
-  TPath extends TSchema = TModel,
+  TCreate extends TSchema,
+  TUpdate extends TSchema,
+  TDelete extends TSchema,
+  TQuery extends TSchema,
+  TPath extends TSchema,
+  TTransformer extends (serialized: Static<TModel>) => any,
 > = {
   name: string;
   resource: string;
@@ -17,6 +18,7 @@ export type ModelOptions<
   del: TDelete;
   query: TQuery;
   path: TPath;
+  transformer: TTransformer;
 };
 
 export class Model<
@@ -26,6 +28,7 @@ export class Model<
   TDelete extends TSchema,
   TQuery extends TSchema,
   TPath extends TSchema,
+  TTransformer extends (serialized: Static<TModel>) => any,
 > {
   name: string;
   resource: string;
@@ -38,9 +41,18 @@ export class Model<
     query: TQuery;
     path: TPath;
   };
+  transformer: TTransformer;
 
   constructor(
-    options: ModelOptions<TModel, TCreate, TUpdate, TDelete, TQuery, TPath>
+    options: ModelOptions<
+      TModel,
+      TCreate,
+      TUpdate,
+      TDelete,
+      TQuery,
+      TPath,
+      TTransformer
+    >
   ) {
     this.name = options.name;
     this.resource = options.resource;
@@ -53,6 +65,7 @@ export class Model<
       path: options.path,
       query: options.query,
     };
+    this.transformer = options.transformer;
   }
 }
 
@@ -63,6 +76,7 @@ export function createModel<
   TDelete extends TSchema,
   TQuery extends TSchema,
   TPath extends TSchema,
+  TTransformer extends (serialized: Static<TModel>) => any,
 >({
   name,
   resource,
@@ -73,8 +87,25 @@ export function createModel<
   del,
   query,
   path,
-}: ModelOptions<TModel, TCreate, TUpdate, TDelete, TQuery, TPath>) {
-  return new Model<TModel, TCreate, TUpdate, TDelete, TQuery, TPath>({
+  transformer,
+}: ModelOptions<
+  TModel,
+  TCreate,
+  TUpdate,
+  TDelete,
+  TQuery,
+  TPath,
+  TTransformer
+>) {
+  return new Model<
+    TModel,
+    TCreate,
+    TUpdate,
+    TDelete,
+    TQuery,
+    TPath,
+    TTransformer
+  >({
     name,
     resource,
     idKey,
@@ -84,5 +115,6 @@ export function createModel<
     del,
     query,
     path,
+    transformer,
   });
 }

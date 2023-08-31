@@ -1,7 +1,7 @@
 import { QueryClient } from "@tanstack/react-query";
 import { MutableRefObject } from "react";
 
-import { TSchema, Model, Procedure } from "../common";
+import { TSchema, Model, Procedure, Static } from "../common";
 
 import { ReactModel } from "./model";
 import { ReactProcedure } from "./procedure";
@@ -23,7 +23,7 @@ export type SearchQuery = {
 export type ModelMap<
   M extends Record<
     string,
-    Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema>
+    Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema, any>
   >,
 > = {
   [K in keyof M]: M[K];
@@ -32,10 +32,10 @@ export type ModelMap<
 export type ReactModelMap<
   M extends Record<
     string,
-    Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema>
+    Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema, any>
   >,
 > = {
-  [K in keyof M]: ReactModel<M[K]>;
+  [K in keyof M]: ReactModel<M[K], M[K]["transformer"]>;
 };
 
 export type ProcedureMap<
@@ -53,7 +53,7 @@ export type ReactProcedureMap<
 interface CreateApiOptions<
   M extends Record<
     string,
-    Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema>
+    Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema, any>
   >,
   P extends Record<string, Procedure<TSchema, TSchema>>,
 > {
@@ -67,7 +67,7 @@ interface CreateApiOptions<
 export function createApi<
   M extends Record<
     string,
-    Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema>
+    Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema, any>
   >,
   P extends Record<string, Procedure<TSchema, TSchema>>,
 >({
@@ -81,10 +81,12 @@ export function createApi<
     ...Object.keys(models).reduce(
       (acc, key) => ({
         ...acc,
-        [key as keyof M]: new ReactModel<M[keyof M]>({
-          baseUrl: baseUrl,
-          model: models[key as keyof M],
-        }).bind({
+        [key as keyof M]: new ReactModel<M[keyof M], M[keyof M]["transformer"]>(
+          {
+            baseUrl: baseUrl,
+            model: models[key as keyof M],
+          }
+        ).bind({
           client,
           baseUrl,
           token,

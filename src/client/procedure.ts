@@ -22,7 +22,6 @@ interface ProcedureBindOptions {
   token: MutableRefObject<string | null>;
 }
 
-// TParams extends TSchema, TResult extends TSchema
 export class ReactProcedure<TProcedure extends Procedure<any, any>> {
   baseUrl: string = "";
   token: MutableRefObject<string | null>;

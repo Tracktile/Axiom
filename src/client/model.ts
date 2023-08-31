@@ -47,13 +47,16 @@ interface ModelBindOptions {
 }
 
 export interface ReactModelOptions<
-  TModel extends Model<any, any, any, any, any, any>,
+  TModel extends Model<any, any, any, any, any, any, any>,
 > {
   model: TModel;
   baseUrl: string;
 }
 
-export class ReactModel<TModel extends Model<any, any, any, any, any, any>> {
+export class ReactModel<
+  TModel extends Model<any, any, any, any, any, any, TTransform>,
+  TTransform extends (serialized: Static<TModel["schemas"]["model"]>) => any,
+> {
   model: TModel;
   client?: QueryClient;
   baseUrl: string;
@@ -63,6 +66,12 @@ export class ReactModel<TModel extends Model<any, any, any, any, any, any>> {
     this.model = options.model;
     this.token = createRef<string | null>();
     this.baseUrl = "";
+  }
+
+  transform(
+    serialized: Static<TModel["schemas"]["model"]>
+  ): ReturnType<TTransform> {
+    return this.model.transformer(serialized);
   }
 
   modelKeys = {
@@ -195,7 +204,7 @@ export class ReactModel<TModel extends Model<any, any, any, any, any, any>> {
     this.client.setMutationDefaults(this.modelKeys.remove(), {
       retry: false,
       mutationFn: (item: Static<TModel["schemas"]["model"]>) =>
-        createRemoveRequestFn<Static<TModel["schemas"]["model"]>>({
+        createRemoveRequestFn<TModel["schemas"]["model"]>({
           resourcePath: buildResourcePath(this.baseUrl, this.model.resource),
           token: this.token,
           idKey: this.model.idKey,
@@ -311,15 +320,15 @@ export class ReactModel<TModel extends Model<any, any, any, any, any, any>> {
       getPreviousPageParam: (firstPage) => {
         return (firstPage?.offset ?? 0) - firstPage?.results?.length ?? 0;
       },
-      // select: ({ pages, pageParams }) => {
-      //   return {
-      //     pages: pages.map((page) => ({
-      //       ...page,
-      //       results: page.results.map((d) => this.model.transform(d)),
-      //     })),
-      //     pageParams: pageParams,
-      //   };
-      // },
+      select: ({ pages, pageParams }) => {
+        return {
+          pages: pages.map((page) => ({
+            ...page,
+            results: page.results.map((d) => this.transform(d)),
+          })),
+          pageParams: pageParams,
+        };
+      },
     });
     const { data, ...queryResult } = query;
     return {
