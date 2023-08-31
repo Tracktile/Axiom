@@ -2,6 +2,7 @@ node_modules/
 coverage/
 *.js
 *.d.ts
+*.d.ts.map
 *.js.map
 !jest.config.js
 !babel.config.js

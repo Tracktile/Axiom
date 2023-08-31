@@ -28,10 +28,7 @@ type AxiomQueryOptions = {
   fields?: SearchQuery["fields"];
 };
 
-type AxiomModelGetOptions<TModel extends TSchema> = UseQueryOptions<
-  Static<TModel>,
-  Error
->;
+type AxiomModelGetOptions<T> = UseQueryOptions<T, Error>;
 
 type AxiomModelMutationOptions<
   TModal extends TSchema,
@@ -259,7 +256,9 @@ export class ReactModel<
 
   get(
     id: string | number,
-    options: Partial<AxiomModelGetOptions<TModel["schemas"]["model"]>> = {}
+    options: Partial<
+      AxiomModelGetOptions<ReturnType<TModel["transformer"]>>
+    > = {}
   ) {
     return useQuery({
       ...options,
@@ -270,8 +269,8 @@ export class ReactModel<
           resourcePath: buildResourcePath(this.baseUrl, this.model.resource),
           token: this.token,
         })(id),
-      select(data) {
-        return { hello: "world" };
+      select: (data) => {
+        return this.transform(data);
       },
     });
   }
