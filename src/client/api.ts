@@ -35,7 +35,13 @@ export type ReactModelMap<
     Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema, any>
   >,
 > = {
-  [K in keyof M]: ReactModel<M[K], M[K]["transformer"]>;
+  [K in keyof M]: ReactModel<
+    M[K],
+    M[K]["schemas"]["model"],
+    M[K]["schemas"]["create"],
+    M[K]["schemas"]["update"],
+    M[K]["transformer"]
+  >;
 };
 
 export type ProcedureMap<
@@ -81,12 +87,16 @@ export function createApi<
     ...Object.keys(models).reduce(
       (acc, key) => ({
         ...acc,
-        [key as keyof M]: new ReactModel<M[keyof M], M[keyof M]["transformer"]>(
-          {
-            baseUrl: baseUrl,
-            model: models[key as keyof M],
-          }
-        ).bind({
+        [key as keyof M]: new ReactModel<
+          M[keyof M],
+          M[keyof M]["schemas"]["model"],
+          M[keyof M]["schemas"]["create"],
+          M[keyof M]["schemas"]["update"],
+          M[keyof M]["transformer"]
+        >({
+          baseUrl: baseUrl,
+          model: models[key as keyof M],
+        }).bind({
           client,
           baseUrl,
           token,

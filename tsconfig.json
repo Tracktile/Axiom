@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
+    "module": "esnext",
     "outDir": ".",
     "declaration": true,
     "declarationMap": true,

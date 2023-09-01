@@ -6,9 +6,19 @@ import {
   useMutation,
   UseMutationOptions,
   UseQueryOptions,
+  UseInfiniteQueryOptions,
+  InfiniteData,
+  DefinedInfiniteQueryObserverResult,
+  QueryKey,
 } from "@tanstack/react-query";
 
-import { Static, TSchema, Model } from "../common";
+import {
+  Static,
+  TSchema,
+  Model,
+  noAdditionalProperties,
+  Value,
+} from "../common";
 
 import {
   buildResourcePath,
@@ -20,6 +30,7 @@ import {
 } from "./request";
 
 import { SearchQuery } from "./api";
+import { removeAdditionalProperties } from "../common";
 
 type AxiomQueryOptions = {
   offset?: number;
@@ -29,6 +40,18 @@ type AxiomQueryOptions = {
 };
 
 type AxiomModelGetOptions<T> = UseQueryOptions<T, Error>;
+
+// export interface UseInfiniteQueryOptions<
+//   TQueryFnData = unknown,
+//   TError = DefaultError,
+//   TData = TQueryFnData,
+//   TQueryData = TQueryFnData,
+//   TQueryKey extends QueryKey = QueryKey,
+//   TPageParam = unknown,
+// >
+
+export type AxiomModelQueryOptions<TQueryFnData, TData> =
+  UseInfiniteQueryOptions<TQueryFnData, Error, TData, TData, QueryKey, number>;
 
 type AxiomModelMutationOptions<
   TModal extends TSchema,
@@ -51,7 +74,10 @@ export interface ReactModelOptions<
 }
 
 export class ReactModel<
-  TModel extends Model<any, any, any, any, any, any, TTransform>,
+  TModel extends Model<TM, TC, TU, any, any, any, TTransform>,
+  TM extends TSchema,
+  TC extends TSchema,
+  TU extends TSchema,
   TTransform extends (serialized: Static<TModel["schemas"]["model"]>) => any,
 > {
   model: TModel;
@@ -88,10 +114,14 @@ export class ReactModel<
     }
     this.client.setMutationDefaults(this.modelKeys.create(), {
       mutationFn: (item: Static<TModel["schemas"]["create"]>) => {
+        const pruned = Value.Cast(
+          noAdditionalProperties(this.model.schemas.create),
+          item
+        );
         return createCreateRequestFn<TModel["schemas"]["model"]>({
           resourcePath: buildResourcePath(this.baseUrl, this.model.resource),
           token: this.token,
-        })(item);
+        })(pruned);
       },
       onMutate: async (
         item: Static<TModel["schemas"]["model"]>
@@ -151,11 +181,15 @@ export class ReactModel<
     }
     this.client.setMutationDefaults(this.modelKeys.update(), {
       mutationFn: (item: Static<TModel["schemas"]["model"]>) => {
+        const pruned = Value.Cast(
+          noAdditionalProperties(this.model.schemas.update),
+          item
+        );
         return createUpdateRequestFn<TModel["schemas"]["model"]>({
           resourcePath: buildResourcePath(this.baseUrl, this.model.resource),
           idKey: this.model.idKey,
           token: this.token,
-        })(item);
+        })(pruned);
       },
       onMutate: async (
         item: Static<TModel["schemas"]["model"]>
@@ -261,9 +295,16 @@ export class ReactModel<
     > = {}
   ) {
     return useQuery({
-      ...options,
       queryKey: this.modelKeys.get(id),
       enabled: !!id,
+      refetchInterval: false,
+      refetchIntervalInBackground: false,
+      refetchOnMount: false,
+      refetchOnReconnect: false,
+      refetchOnWindowFocus: false,
+      retry: false,
+      retryOnMount: false,
+      // ...options,
       queryFn: () =>
         createGetRequestFn<TModel["schemas"]["model"]>({
           resourcePath: buildResourcePath(this.baseUrl, this.model.resource),
@@ -275,12 +316,18 @@ export class ReactModel<
     });
   }
 
-  query({
-    offset: offsetArg,
-    limit = 99,
-    orderBy,
-    fields = [],
-  }: AxiomQueryOptions = {}) {
+  query(
+    {
+      offset: offsetArg,
+      limit = 99,
+      orderBy,
+      fields = [],
+    }: AxiomQueryOptions = {},
+    options: AxiomModelQueryOptions<
+      ReturnType<TModel["transformer"]>,
+      ReturnType<TModel["transformer"]>
+    >
+  ) {
     const queryFn = async ({ pageParam = 0 }) => {
       const offset = offsetArg ?? (pageParam as number);
       const { results, total } = await createSearchRequestFn<
@@ -303,11 +350,6 @@ export class ReactModel<
     };
 
     const query = useInfiniteQuery({
-      queryKey: this.modelKeys.search({
-        orderBy,
-        fields,
-      }),
-      queryFn,
       initialData: {
         pages: [],
         pageParams: [],
@@ -319,6 +361,19 @@ export class ReactModel<
       getPreviousPageParam: (firstPage) => {
         return (firstPage?.offset ?? 0) - firstPage?.results?.length ?? 0;
       },
+      refetchInterval: false,
+      refetchIntervalInBackground: false,
+      refetchOnMount: false,
+      refetchOnReconnect: false,
+      refetchOnWindowFocus: false,
+      retry: false,
+      retryOnMount: false,
+      // ...options,
+      queryKey: this.modelKeys.search({
+        orderBy,
+        fields,
+      }),
+      queryFn,
       select: ({ pages, pageParams }) => {
         return {
           pages: pages.map((page) => ({
@@ -389,7 +444,7 @@ export class ReactModel<
     this.client?.invalidateQueries({ queryKey: this.modelKeys.search() });
   }
 
-  invalidateById(id: keyof Static<TModel["schemas"]["model"]>) {
+  invalidateById(id: string | number) {
     this.client?.invalidateQueries({ queryKey: this.modelKeys.get(id) });
   }
 
