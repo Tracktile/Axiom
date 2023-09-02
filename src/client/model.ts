@@ -8,7 +8,6 @@ import {
   UseQueryOptions,
   UseInfiniteQueryOptions,
   InfiniteData,
-  DefinedInfiniteQueryObserverResult,
   QueryKey,
 } from "@tanstack/react-query";
 
@@ -18,6 +17,7 @@ import {
   Model,
   noAdditionalProperties,
   Value,
+  noEmptyStringValues,
 } from "../common";
 
 import {
@@ -30,7 +30,6 @@ import {
 } from "./request";
 
 import { SearchQuery } from "./api";
-import { removeAdditionalProperties } from "../common";
 
 type AxiomQueryOptions = {
   offset?: number;
@@ -50,8 +49,32 @@ type AxiomModelGetOptions<T> = UseQueryOptions<T, Error>;
 //   TPageParam = unknown,
 // >
 
-export type AxiomModelQueryOptions<TQueryFnData, TData> =
-  UseInfiniteQueryOptions<TQueryFnData, Error, TData, TData, QueryKey, number>;
+type AxiomModelQueryOptions<
+  TModel extends Model<TM, TC, TU, any, any, any, TTransform>,
+  TM extends TSchema = TModel["schemas"]["model"],
+  TC extends TSchema = TModel["schemas"]["create"],
+  TU extends TSchema = TModel["schemas"]["update"],
+  TTransform extends (
+    serialized: Static<TModel["schemas"]["model"]>
+  ) => any = TModel["transformer"],
+> = UseInfiniteQueryOptions<
+  {
+    results: Static<TModel["schemas"]["model"]>[];
+    total: number;
+    offset: number;
+    limit: number;
+  },
+  Error,
+  ReturnType<TTransform>,
+  InfiniteData<{
+    results: ReturnType<TTransform>[];
+    total: number;
+    offset: number;
+    limit: number;
+  }>,
+  QueryKey,
+  number
+>;
 
 type AxiomModelMutationOptions<
   TModal extends TSchema,
@@ -116,8 +139,9 @@ export class ReactModel<
       mutationFn: (item: Static<TModel["schemas"]["create"]>) => {
         const pruned = Value.Cast(
           noAdditionalProperties(this.model.schemas.create),
-          item
+          noEmptyStringValues(item as Record<string, unknown>)
         );
+        console.log({ item, pruned });
         return createCreateRequestFn<TModel["schemas"]["model"]>({
           resourcePath: buildResourcePath(this.baseUrl, this.model.resource),
           token: this.token,
@@ -183,7 +207,7 @@ export class ReactModel<
       mutationFn: (item: Static<TModel["schemas"]["model"]>) => {
         const pruned = Value.Cast(
           noAdditionalProperties(this.model.schemas.update),
-          item
+          noEmptyStringValues(item as Record<string, unknown>)
         );
         return createUpdateRequestFn<TModel["schemas"]["model"]>({
           resourcePath: buildResourcePath(this.baseUrl, this.model.resource),
@@ -323,10 +347,7 @@ export class ReactModel<
       orderBy,
       fields = [],
     }: AxiomQueryOptions = {},
-    options: AxiomModelQueryOptions<
-      ReturnType<TModel["transformer"]>,
-      ReturnType<TModel["transformer"]>
-    >
+    options?: AxiomModelQueryOptions<TModel>
   ) {
     const queryFn = async ({ pageParam = 0 }) => {
       const offset = offsetArg ?? (pageParam as number);
