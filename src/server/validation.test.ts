@@ -43,7 +43,6 @@ describe("Validation", () => {
       },
       async (ctx, next) => {
         ctx.status = 200;
-        console.log("body: ", ctx.request.body);
         ctx.body = ctx.request.body;
         await next();
       }

@@ -1,30 +1,48 @@
 {
   "name": "@tracktile/axiom",
-  "version": "1.0.0-beta.40",
+  "version": "1.0.0-beta.99",
   "description": "Dead simple, Opinionated, and Type Safe framework for building APIs with React Frontends.",
   "homepage": "https://github.com/Tracktile/Axiom",
   "license": "MIT",
   "author": "Jarred Kenny <jarred.kenny@tracktile.io (https://tracktile.io/)",
-  "main": "./index.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/Tracktile/Axiom.git"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsup",
     "test": "jest -c=./package.json src.*test.ts --verbose --coverage --forceExit"
   },
   "bin": {
-    "axiom": "./cli/index.js"
+    "axiom": "./cli.js"
+  },
+  "main": "./common.js",
+  "module": "./common.mjs",
+  "types": "./common.d.ts",
+  "exports": {
+    ".": {
+      "require": "./common.js",
+      "import": "./common.mjs",
+      "types": "./common.d.ts"
+    },
+    "./client": {
+      "require": "./client.js",
+      "import": "./client.mjs",
+      "types": "./client.d.ts"
+    },
+    "./server": {
+      "require": "./server.js",
+      "import": "./server.mjs",
+      "types": "./server.d.ts"
+    }
   },
   "files": [
-    "common",
-    "cli",
-    "client",
-    "server",
-    "index.js",
-    "index.d.ts",
-    "index.js.map"
+    "*.d.ts",
+    "*.d.mts",
+    "*.js",
+    "*.js.map",
+    "*.mjs",
+    "*.mjs.map"
   ],
   "dependencies": {
     "@koa/cors": "^4.0.0",
@@ -41,6 +59,7 @@
     "openapi3-ts": "^4.1.2",
     "qs": "^6.11.2",
     "react": "^18.2.0",
+    "reflect-metadata": "^0.1.13",
     "title-case": "^3.0.3",
     "ts-command-line-args": "^2.5.1",
     "ts-custom-error": "^3.3.1",
@@ -49,6 +68,7 @@
   "devDependencies": {
     "@babel/preset-env": "^7.22.10",
     "@babel/preset-typescript": "^7.22.5",
+    "@swc/core": "^1.3.83",
     "@types/aws-lambda": "^8.10.119",
     "@types/jest": "^29.5.3",
     "@types/koa": "^2.13.8",
@@ -68,6 +88,7 @@
     "ts-jest": "^29.1.1",
     "ts-node": "^10.9.1",
     "ts-prune": "^0.10.3",
+    "tsup": "^7.2.0",
     "typescript": "^5.1.6"
   },
   "peerDependencies": {}

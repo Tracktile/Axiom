@@ -2,7 +2,6 @@ import { createRef, MutableRefObject } from "react";
 import {
   QueryClient,
   useQuery,
-  useInfiniteQuery,
   useMutation,
   UseMutationOptions,
   UseQueryOptions,
@@ -16,8 +15,8 @@ import {
   TSchema,
   Model,
   noAdditionalProperties,
-  Value,
   noEmptyStringValues,
+  undefinedToNull,
 } from "../common";
 
 import {
@@ -37,44 +36,6 @@ type AxiomQueryOptions = {
   orderBy?: string;
   fields?: SearchQuery["fields"];
 };
-
-type AxiomModelGetOptions<T> = UseQueryOptions<T, Error>;
-
-// export interface UseInfiniteQueryOptions<
-//   TQueryFnData = unknown,
-//   TError = DefaultError,
-//   TData = TQueryFnData,
-//   TQueryData = TQueryFnData,
-//   TQueryKey extends QueryKey = QueryKey,
-//   TPageParam = unknown,
-// >
-
-type AxiomModelQueryOptions<
-  TModel extends Model<TM, TC, TU, any, any, any, TTransform>,
-  TM extends TSchema = TModel["schemas"]["model"],
-  TC extends TSchema = TModel["schemas"]["create"],
-  TU extends TSchema = TModel["schemas"]["update"],
-  TTransform extends (
-    serialized: Static<TModel["schemas"]["model"]>
-  ) => any = TModel["transformer"],
-> = UseInfiniteQueryOptions<
-  {
-    results: Static<TModel["schemas"]["model"]>[];
-    total: number;
-    offset: number;
-    limit: number;
-  },
-  Error,
-  ReturnType<TTransform>,
-  InfiniteData<{
-    results: ReturnType<TTransform>[];
-    total: number;
-    offset: number;
-    limit: number;
-  }>,
-  QueryKey,
-  number
->;
 
 type AxiomModelMutationOptions<
   TModal extends TSchema,
@@ -121,14 +82,14 @@ export class ReactModel<
   }
 
   modelKeys = {
-    search: (params: SearchQuery = {}) => [
+    search: (args: SearchQuery = {}) => [
       this.model.name,
-      ...(params ? [params] : []),
+      Object.fromEntries(Object.entries(args).filter(([, val]) => !!val)),
     ],
     get: (id: any) => [this.model.name, id],
-    create: () => [this.model.name, "create"],
-    update: (id?: any) => [this.model.name, id, "update"],
-    remove: (id?: any) => [this.model.name, id, "remove"],
+    create: () => [`create-${this.model.name}`],
+    update: () => [`update-${this.model.name}`],
+    remove: () => [`delete-${this.model.name}`],
   };
 
   private bindCreateMutation() {
@@ -137,11 +98,12 @@ export class ReactModel<
     }
     this.client.setMutationDefaults(this.modelKeys.create(), {
       mutationFn: (item: Static<TModel["schemas"]["create"]>) => {
-        const pruned = Value.Cast(
-          noAdditionalProperties(this.model.schemas.create),
-          noEmptyStringValues(item as Record<string, unknown>)
+        const pruned = undefinedToNull(
+          noEmptyStringValues(
+            noAdditionalProperties(this.model.schemas.create, item as object)
+          )
         );
-        console.log({ item, pruned });
+        console.log("axiom create", { item, pruned });
         return createCreateRequestFn<TModel["schemas"]["model"]>({
           resourcePath: buildResourcePath(this.baseUrl, this.model.resource),
           token: this.token,
@@ -176,6 +138,9 @@ export class ReactModel<
         this.client.invalidateQueries({
           queryKey: this.modelKeys.get(item[this.model.idKey]),
         });
+        this.client.invalidateQueries({
+          queryKey: this.modelKeys.search(),
+        });
       },
       onError: (
         _err: Error,
@@ -195,6 +160,9 @@ export class ReactModel<
             () => undefined
           );
         }
+        this.client?.invalidateQueries({
+          queryKey: this.modelKeys.search(),
+        });
       },
     });
   }
@@ -205,15 +173,17 @@ export class ReactModel<
     }
     this.client.setMutationDefaults(this.modelKeys.update(), {
       mutationFn: (item: Static<TModel["schemas"]["model"]>) => {
-        const pruned = Value.Cast(
-          noAdditionalProperties(this.model.schemas.update),
-          noEmptyStringValues(item as Record<string, unknown>)
+        const id = item[this.model.idKey] as string | number;
+        const pruned = undefinedToNull(
+          noEmptyStringValues(
+            noAdditionalProperties(this.model.schemas.update, item as object)
+          )
         );
+        console.log("axiom update", { item, pruned });
         return createUpdateRequestFn<TModel["schemas"]["model"]>({
           resourcePath: buildResourcePath(this.baseUrl, this.model.resource),
-          idKey: this.model.idKey,
           token: this.token,
-        })(pruned);
+        })(id, pruned);
       },
       onMutate: async (
         item: Static<TModel["schemas"]["model"]>
@@ -221,19 +191,21 @@ export class ReactModel<
         if (!this.client) {
           throw new Error("Client is not bound");
         }
+        const id = item[this.model.idKey] as string | number;
         await this.client.cancelQueries({
-          queryKey: this.modelKeys.get(item[this.model.idKey]),
+          queryKey: this.modelKeys.get(id),
         });
         const previous = this.client.getQueryData<
           Static<TModel["schemas"]["model"]>
-        >(this.modelKeys.get(item[this.model.idKey]));
-        this.client.setQueryData(
-          this.modelKeys.get(item[this.model.idKey]),
-          item
-        );
+        >(this.modelKeys.get(id));
+        this.client.setQueryData(this.modelKeys.get(id), item);
         return { previous };
       },
-      onSuccess: () => {},
+      onSuccess: () => {
+        this.client?.invalidateQueries({
+          queryKey: this.modelKeys.search(),
+        });
+      },
       onError: (
         _err: Error,
         item: Static<TModel["schemas"]["model"]>,
@@ -243,11 +215,12 @@ export class ReactModel<
           if (!this.client) {
             throw new Error("Client is not bound");
           }
-          this.client.setQueryData(
-            this.modelKeys.get(item[this.model.idKey]),
-            context.previous
-          );
+          const id = item[this.model.idKey] as string | number;
+          this.client.setQueryData(this.modelKeys.get(id), context.previous);
         }
+        this.client?.invalidateQueries({
+          queryKey: this.modelKeys.search(),
+        });
       },
     });
   }
@@ -258,12 +231,13 @@ export class ReactModel<
     }
     this.client.setMutationDefaults(this.modelKeys.remove(), {
       retry: false,
-      mutationFn: (item: Static<TModel["schemas"]["model"]>) =>
-        createRemoveRequestFn<TModel["schemas"]["model"]>({
+      mutationFn: (item: Static<TModel["schemas"]["model"]>) => {
+        const id = item[this.model.idKey] as string | number;
+        return createRemoveRequestFn<TModel["schemas"]["model"]>({
           resourcePath: buildResourcePath(this.baseUrl, this.model.resource),
           token: this.token,
-          idKey: this.model.idKey,
-        })(item),
+        })(id, item);
+      },
       onMutate: async (
         item: Static<TModel["schemas"]["model"]>
       ): Promise<TContext<Static<TModel["schemas"]["model"]>>> => {
@@ -271,7 +245,7 @@ export class ReactModel<
           throw new Error("Client is not bound");
         }
         await this.client.cancelQueries({
-          queryKey: this.modelKeys.remove(item[this.model.idKey]),
+          queryKey: this.modelKeys.remove(),
         });
 
         const previous = this.client.getQueryData<
@@ -283,21 +257,25 @@ export class ReactModel<
         );
         return { previous };
       },
-      onSuccess: () => {},
+      onSuccess: () => {
+        this.client?.invalidateQueries({
+          queryKey: this.modelKeys.search(),
+        });
+      },
       onError: (
         _err: Error,
         item: Static<TModel["schemas"]["model"]>,
         context?: TContext<Static<TModel["schemas"]["model"]>>
       ) => {
         if (typeof context?.previous !== "undefined") {
-          if (!this.client) {
-            throw new Error("Client is not bound");
-          }
-          this.client.setQueryData(
+          this.client?.setQueryData(
             this.modelKeys.get(item[this.model.idKey]),
             context.previous
           );
         }
+        this.client?.invalidateQueries({
+          queryKey: this.modelKeys.search(),
+        });
       },
     });
   }
@@ -313,22 +291,26 @@ export class ReactModel<
   }
 
   get(
-    id: string | number,
-    options: Partial<
-      AxiomModelGetOptions<ReturnType<TModel["transformer"]>>
-    > = {}
+    id: string | number = "",
+    options?: Partial<
+      UseQueryOptions<
+        Static<TModel["schemas"]["model"]>,
+        Error,
+        ReturnType<TTransform>
+      >
+    >
   ) {
     return useQuery({
       queryKey: this.modelKeys.get(id),
       enabled: !!id,
       refetchInterval: false,
       refetchIntervalInBackground: false,
-      refetchOnMount: false,
+      refetchOnMount: true,
+      retryOnMount: true,
       refetchOnReconnect: false,
       refetchOnWindowFocus: false,
       retry: false,
-      retryOnMount: false,
-      // ...options,
+      ...options,
       queryFn: () =>
         createGetRequestFn<TModel["schemas"]["model"]>({
           resourcePath: buildResourcePath(this.baseUrl, this.model.resource),
@@ -341,75 +323,72 @@ export class ReactModel<
   }
 
   query(
-    {
-      offset: offsetArg,
-      limit = 99,
-      orderBy,
-      fields = [],
-    }: AxiomQueryOptions = {},
-    options?: AxiomModelQueryOptions<TModel>
+    { offset, limit = 99, orderBy, fields = [] }: AxiomQueryOptions = {},
+    options?: Partial<
+      UseQueryOptions<
+        {
+          results: Static<TModel["schemas"]["model"]>[];
+          total: number;
+          offset: number | undefined;
+          limit: number;
+        },
+        Error,
+        {
+          results: ReturnType<TTransform>[];
+          total: number;
+          offset: number | undefined;
+          limit: number;
+        }
+      >
+    >
   ) {
-    const queryFn = async ({ pageParam = 0 }) => {
-      const offset = offsetArg ?? (pageParam as number);
-      const { results, total } = await createSearchRequestFn<
-        TModel["schemas"]["model"]
-      >({
-        resourcePath: buildResourcePath(this.baseUrl, this.model.resource),
-        token: this.token,
-      })({
-        limit,
-        offset,
-        orderBy,
-        ...parseSearchQuery(fields),
-      });
-      return {
-        results,
-        total,
-        offset,
-        limit,
-      };
-    };
-
-    const query = useInfiniteQuery({
-      initialData: {
-        pages: [],
-        pageParams: [],
-      },
-      initialPageParam: 0,
-      getNextPageParam: (lastPage) => {
-        return (lastPage?.offset ?? 0) + lastPage?.results?.length ?? 0;
-      },
-      getPreviousPageParam: (firstPage) => {
-        return (firstPage?.offset ?? 0) - firstPage?.results?.length ?? 0;
-      },
-      refetchInterval: false,
-      refetchIntervalInBackground: false,
-      refetchOnMount: false,
-      refetchOnReconnect: false,
-      refetchOnWindowFocus: false,
-      retry: false,
-      retryOnMount: false,
-      // ...options,
+    const query = useQuery({
       queryKey: this.modelKeys.search({
+        limit,
+        offset,
         orderBy,
         fields,
       }),
-      queryFn,
-      select: ({ pages, pageParams }) => {
+      queryFn: async () => {
+        const { results, total } = await createSearchRequestFn<
+          TModel["schemas"]["model"]
+        >({
+          resourcePath: buildResourcePath(this.baseUrl, this.model.resource),
+          token: this.token,
+        })({
+          limit,
+          offset,
+          orderBy,
+          ...parseSearchQuery(fields),
+        });
         return {
-          pages: pages.map((page) => ({
-            ...page,
-            results: page.results.map((d) => this.transform(d)),
-          })),
-          pageParams: pageParams,
+          results,
+          total,
+          offset,
+          limit,
+        };
+      },
+      refetchInterval: false,
+      refetchIntervalInBackground: false,
+      refetchOnMount: true,
+      retryOnMount: true,
+      refetchOnReconnect: false,
+      refetchOnWindowFocus: false,
+      retry: false,
+      ...options,
+      select: (data) => {
+        return {
+          ...data,
+          results: data.results.map((d) => this.transform(d)),
         };
       },
     });
-    const { data, ...queryResult } = query;
     return {
-      ...queryResult,
-      data: data?.pages.map((page) => page.results).flat() ?? [],
-      pages: data?.pages ?? [],
+      ...query,
+      data: query.data?.results ?? [],
+      total: query.data?.total ?? 0,
+      offset: query.data?.offset ?? 0,
+      limit: query.data?.limit ?? 99,
     };
   }
 
@@ -421,7 +400,7 @@ export class ReactModel<
   ) {
     return useMutation<
       Static<TModel["schemas"]["model"]>,
-      unknown,
+      Error,
       Static<TModel["schemas"]["create"]>
     >({
       mutationKey: this.modelKeys.create(),
@@ -437,7 +416,7 @@ export class ReactModel<
   ) {
     return useMutation<
       Static<TModel["schemas"]["model"]>,
-      unknown,
+      Error,
       Static<TModel["schemas"]["update"]>
     >({
       mutationKey: this.modelKeys.update(),
@@ -453,7 +432,7 @@ export class ReactModel<
   ) {
     return useMutation<
       Static<TModel["schemas"]["model"]>,
-      unknown,
+      Error,
       Static<TModel["schemas"]["model"]>
     >({
       mutationKey: this.modelKeys.remove(),

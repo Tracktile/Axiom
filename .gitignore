@@ -1,8 +1,12 @@
 node_modules/
 coverage/
-*.js
+cli/
 *.d.ts
+*.d.mts
 *.d.ts.map
+*.js
 *.js.map
+*.mjs
+*.mjs.map
 !jest.config.js
 !babel.config.js

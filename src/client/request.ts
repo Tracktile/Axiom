@@ -100,6 +100,7 @@ type RequestCreatorOptions = {
 export function createSearchRequestFn<T extends TSchema>({
   resourcePath,
   token,
+  ...options
 }: RequestCreatorOptions) {
   return async function search({
     offset = 0,
@@ -116,6 +117,7 @@ export function createSearchRequestFn<T extends TSchema>({
         "X-Pagination-Limit": limit.toString(),
         ...(!!orderBy ? { "X-Pagination-OrderBy": orderBy } : {}),
       },
+      ...options,
     });
     return { results, total, offset, limit, orderBy };
   };
@@ -124,11 +126,13 @@ export function createSearchRequestFn<T extends TSchema>({
 export function createCallRequestFn<T extends TSchema>({
   resourcePath,
   token,
+  ...options
 }: RequestCreatorOptions) {
   return async function call(params: QueryParameters) {
     const [resp] = await request<unknown, Static<T>>(resourcePath, {
       token: token.current,
       query: params,
+      ...options,
     });
     return resp;
   };
@@ -152,12 +156,14 @@ export function createGetRequestFn<T extends TSchema>({
 export function createCreateRequestFn<T extends TSchema>({
   resourcePath,
   token,
+  ...options
 }: RequestCreatorOptions) {
   return async function create(body: Static<T>) {
     const [resp] = await request<Static<T>>(resourcePath, {
       method: "post",
       body,
       token: token.current,
+      ...options,
     });
     return resp;
   };
@@ -165,12 +171,11 @@ export function createCreateRequestFn<T extends TSchema>({
 
 export function createUpdateRequestFn<T extends TSchema>({
   resourcePath,
-  idKey,
   token,
   ...options
-}: RequestCreatorOptions & { idKey: keyof Static<T> }) {
-  return async function update(body: Static<T>) {
-    const [resp] = await request<Static<T>>(`${resourcePath}/${body[idKey]}`, {
+}: RequestCreatorOptions) {
+  return async function update(id: string | number, body: Static<T>) {
+    const [resp] = await request<Static<T>>(`${resourcePath}/${id}`, {
       method: "put",
       body,
       token: token.current,
@@ -182,14 +187,11 @@ export function createUpdateRequestFn<T extends TSchema>({
 
 export function createRemoveRequestFn<T extends TSchema>({
   resourcePath,
-  idKey,
   token,
   ...options
-}: RequestCreatorOptions & {
-  idKey: keyof Static<T>;
-}) {
-  return async function remove(body: Static<T>) {
-    await request<Static<T>, void>(`${resourcePath}/${body[idKey]}`, {
+}: RequestCreatorOptions) {
+  return async function remove(id: string | number, body: Static<T>) {
+    await request<Static<T>, void>(`${resourcePath}/${id}`, {
       method: "delete",
       body,
       token: token.current,
