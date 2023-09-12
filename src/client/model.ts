@@ -103,7 +103,6 @@ export class ReactModel<
             noAdditionalProperties(this.model.schemas.create, item as object)
           )
         );
-        console.log("axiom create", { item, pruned });
         return createCreateRequestFn<TModel["schemas"]["model"]>({
           resourcePath: buildResourcePath(this.baseUrl, this.model.resource),
           token: this.token,
@@ -179,7 +178,6 @@ export class ReactModel<
             noAdditionalProperties(this.model.schemas.update, item as object)
           )
         );
-        console.log("axiom update", { item, pruned });
         return createUpdateRequestFn<TModel["schemas"]["model"]>({
           resourcePath: buildResourcePath(this.baseUrl, this.model.resource),
           token: this.token,

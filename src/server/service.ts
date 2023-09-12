@@ -112,6 +112,21 @@ export class Service<TExtend = Record<string, unknown>> extends Koa<
     const serviceRouter = new Router<DefaultState, unknown>();
 
     serviceRouter.use(BodyParser());
+    serviceRouter.use((ctx, next) => {
+      if (
+        ["POST", "PUT", "PATCH"].includes(ctx.method) &&
+        ctx.request.body &&
+        typeof ctx.request.body === "object"
+      ) {
+        ctx.request.body = Object.fromEntries(
+          Object.entries(ctx.request.body).map(([key, value]) => [
+            key,
+            value === null ? undefined : value,
+          ])
+        );
+      }
+      return next();
+    });
     serviceRouter.use(...this.middleware);
 
     for (const controller of this.controllers) {

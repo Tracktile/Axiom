@@ -1,6 +1,6 @@
 {
   "name": "@tracktile/axiom",
-  "version": "1.0.0-beta.99",
+  "version": "1.0.0-beta.108",
   "description": "Dead simple, Opinionated, and Type Safe framework for building APIs with React Frontends.",
   "homepage": "https://github.com/Tracktile/Axiom",
   "license": "MIT",
@@ -10,6 +10,7 @@
     "url": "https://github.com/Tracktile/Axiom.git"
   },
   "scripts": {
+    "clean": "rimraf ./*.mjs ./*.mjs.map ./*.d.ts ./*.d.mts ./*.js ./*.js.map",
     "build": "tsup",
     "test": "jest -c=./package.json src.*test.ts --verbose --coverage --forceExit"
   },
@@ -51,6 +52,7 @@
     "@sinclair/typebox": "^0.31.1",
     "@tanstack/react-query": "^5.0.0-beta.20",
     "@vendia/serverless-express": "^4.10.4",
+    "debug": "^4.3.4",
     "hono": "^3.5.0",
     "kebab-case": "^1.0.2",
     "koa": "^2.14.2",
