@@ -9,3 +9,4 @@ export { TypeSystem } from "@sinclair/typebox/system";
 export * from "./model";
 export * from "./procedure";
 export * from "./utils";
+export * from "./types";

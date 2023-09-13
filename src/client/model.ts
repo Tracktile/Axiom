@@ -35,6 +35,7 @@ type AxiomQueryOptions = {
   limit?: number;
   orderBy?: string;
   fields?: SearchQuery["fields"];
+  comparator?: "and" | "or";
 };
 
 type AxiomModelMutationOptions<
@@ -321,7 +322,13 @@ export class ReactModel<
   }
 
   query(
-    { offset, limit = 99, orderBy, fields = [] }: AxiomQueryOptions = {},
+    {
+      offset,
+      limit = 99,
+      orderBy,
+      fields = [],
+      comparator = "or",
+    }: AxiomQueryOptions = {},
     options?: Partial<
       UseQueryOptions<
         {
@@ -353,6 +360,9 @@ export class ReactModel<
         >({
           resourcePath: buildResourcePath(this.baseUrl, this.model.resource),
           token: this.token,
+          headers: {
+            "X-Pagination-Fieldoperator": comparator,
+          },
         })({
           limit,
           offset,

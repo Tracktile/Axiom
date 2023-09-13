@@ -95,11 +95,13 @@ export async function request<TRequestBody, TResponseBody = TRequestBody>(
 type RequestCreatorOptions = {
   resourcePath: string;
   token: MutableRefObject<string | null>;
+  headers?: Record<string, string>;
 };
 
 export function createSearchRequestFn<T extends TSchema>({
   resourcePath,
   token,
+  headers,
   ...options
 }: RequestCreatorOptions) {
   return async function search({
@@ -116,6 +118,7 @@ export function createSearchRequestFn<T extends TSchema>({
         "X-Pagination-Offset": offset.toString(),
         "X-Pagination-Limit": limit.toString(),
         ...(!!orderBy ? { "X-Pagination-OrderBy": orderBy } : {}),
+        ...headers,
       },
       ...options,
     });
