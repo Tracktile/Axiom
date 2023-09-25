@@ -1,8 +1,9 @@
 import { stringify } from "qs";
 import { MutableRefObject } from "react";
 
-import { Static, TSchema } from "../common";
+import { Static, TSchema, convertQueryParamKeysToKabobCase } from "../common";
 import { PaginationParams } from "./model";
+import { Query } from "@tanstack/react-query";
 
 export type QueryParameters = Record<
   string,
@@ -112,7 +113,7 @@ export function createSearchRequestFn<T extends TSchema>({
   }: PaginationParams & QueryParameters = {}) {
     const [results, { total }] = await request<Static<T>[]>(resourcePath, {
       method: "get",
-      query,
+      query: convertQueryParamKeysToKabobCase(query),
       token: token.current,
       headers: {
         "X-Pagination-Offset": offset.toString(),

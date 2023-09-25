@@ -5,9 +5,6 @@ import {
   useMutation,
   UseMutationOptions,
   UseQueryOptions,
-  UseInfiniteQueryOptions,
-  InfiniteData,
-  QueryKey,
 } from "@tanstack/react-query";
 
 import {
@@ -17,6 +14,9 @@ import {
   noAdditionalProperties,
   noEmptyStringValues,
   undefinedToNull,
+  noAdditionalPropertiesInSchema,
+  Value,
+  withNoStringFormats,
 } from "../common";
 
 import {
@@ -93,16 +93,38 @@ export class ReactModel<
     remove: () => [`delete-${this.model.name}`],
   };
 
+  private preparePayloadForSubmission(schema: TSchema, payload: object) {
+    // Exclude all additional properties from cast
+    // Remove string formats so any format can be sent to the backend
+    // Backend is responsible for string format validation
+    let processedSchema = withNoStringFormats(
+      noAdditionalPropertiesInSchema(this.model.schemas.create)
+    );
+
+    // Cast payload to schema
+    const casted = Value.Cast(processedSchema, payload);
+
+    // Map undefined to null
+    // Remove empty string values from objects
+    // Remove properties not in schema
+    const pruned = undefinedToNull(
+      noEmptyStringValues(
+        noAdditionalProperties(this.model.schemas.create, casted as object)
+      )
+    );
+
+    return pruned;
+  }
+
   private bindCreateMutation() {
     if (!this.client) {
       throw new Error("Client is not bound");
     }
     this.client.setMutationDefaults(this.modelKeys.create(), {
       mutationFn: (item: Static<TModel["schemas"]["create"]>) => {
-        const pruned = undefinedToNull(
-          noEmptyStringValues(
-            noAdditionalProperties(this.model.schemas.create, item as object)
-          )
+        const pruned = this.preparePayloadForSubmission(
+          this.model.schemas.create,
+          item as object
         );
         return createCreateRequestFn<TModel["schemas"]["model"]>({
           resourcePath: buildResourcePath(this.baseUrl, this.model.resource),
@@ -174,10 +196,9 @@ export class ReactModel<
     this.client.setMutationDefaults(this.modelKeys.update(), {
       mutationFn: (item: Static<TModel["schemas"]["model"]>) => {
         const id = item[this.model.idKey] as string | number;
-        const pruned = undefinedToNull(
-          noEmptyStringValues(
-            noAdditionalProperties(this.model.schemas.update, item as object)
-          )
+        const pruned = this.preparePayloadForSubmission(
+          this.model.schemas.update,
+          item as object
         );
         return createUpdateRequestFn<TModel["schemas"]["model"]>({
           resourcePath: buildResourcePath(this.baseUrl, this.model.resource),
@@ -355,6 +376,7 @@ export class ReactModel<
         fields,
       }),
       queryFn: async () => {
+        const searchQuery = parseSearchQuery(fields);
         const { results, total } = await createSearchRequestFn<
           TModel["schemas"]["model"]
         >({
@@ -367,7 +389,7 @@ export class ReactModel<
           limit,
           offset,
           orderBy,
-          ...parseSearchQuery(fields),
+          ...searchQuery,
         });
         return {
           results,
@@ -474,26 +496,70 @@ export type PaginationParams = {
 };
 
 const parseSearchQuery = (fields: Required<SearchQuery>["fields"]) =>
-  fields.reduce((acc, { name, is, isOneOf, contains }) => {
-    if (typeof is !== "undefined") {
-      return {
-        ...acc,
-        [name]: is,
-      };
-    }
-    if (typeof isOneOf !== "undefined") {
-      return {
-        ...acc,
-        [name]: isOneOf.join(","),
-      };
-    }
+  fields.reduce(
+    (
+      acc,
+      {
+        name,
+        comparator,
+        is,
+        isOneOf,
+        isLikeOneOf,
+        contains,
+        isGreaterThan,
+        isLessThan,
+      }
+    ) => {
+      if (typeof is !== "undefined") {
+        return {
+          ...acc,
+          [name]: comparator ? `${comparator}:${is}` : is,
+        };
+      }
+      if (typeof isOneOf !== "undefined") {
+        return {
+          ...acc,
+          [name]: comparator
+            ? `${comparator}:${isOneOf.join(",")}`
+            : isOneOf.join(","),
+        };
+      }
 
-    if (typeof contains !== "undefined") {
-      return {
-        ...acc,
-        [name]: `%${contains}%`,
-      };
-    }
+      if (typeof contains !== "undefined") {
+        return {
+          ...acc,
+          [name]: comparator ? `${comparator}:%${contains}%` : `%${contains}%`,
+        };
+      }
 
-    return acc;
-  }, {});
+      if (typeof isLikeOneOf !== "undefined") {
+        return {
+          ...acc,
+          [name]: comparator
+            ? `${comparator}:${isLikeOneOf.map((v) => `%${v}%`).join(",")}`
+            : isLikeOneOf.map((v) => `%${v}%`).join(","),
+        };
+      }
+
+      if (typeof isGreaterThan !== "undefined") {
+        return {
+          ...acc,
+          [name]: comparator
+            ? `${comparator}:>${isGreaterThan}`
+            : `>${isGreaterThan}`,
+        };
+      }
+
+      if (typeof isLessThan !== "undefined") {
+        return {
+          ...acc,
+          [name]: comparator
+            ? `${comparator}:<${isLessThan}`
+            : `<${isLessThan}`,
+        };
+      }
+
+      return acc;
+    },
+    {}
+  );

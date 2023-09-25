@@ -1,6 +1,18 @@
 import { Type, Static, TSchema, TypeGuard, TObject } from "@sinclair/typebox";
 import { GetFieldType } from "./types";
 
+export function convertQueryParamKeysToKabobCase<T extends object>(obj: T) {
+  return Object.fromEntries(
+    Object.entries(obj).map(([key, val]) => [key.replace(/0/g, "."), val])
+  );
+}
+
+export function convertQueryParamKeysFromKabobCase<T extends object>(obj: T) {
+  return Object.fromEntries(
+    Object.entries(obj).map(([key, val]) => [key.replace(/\,/g, "-"), val])
+  );
+}
+
 export function getValue<
   TData,
   TPath extends string,
@@ -65,6 +77,30 @@ export function withDefaultsForStringFormats<T extends TSchema>(schema: T): T {
     return {
       ...schema,
       default: "",
+    };
+  }
+  return schema;
+}
+
+export function withNoStringFormats<T extends TSchema>(schema: T): T {
+  if (TypeGuard.TArray(schema)) {
+    return { ...schema, items: withNoStringFormats(schema.items) };
+  }
+  if (TypeGuard.TObject(schema)) {
+    return {
+      ...schema,
+      properties: Object.fromEntries(
+        Object.entries(schema.properties).map(([key, value]) => [
+          key,
+          withNoStringFormats(value),
+        ])
+      ),
+    };
+  }
+  if (TypeGuard.TString(schema) && typeof schema.format !== "undefined") {
+    return {
+      ...schema,
+      format: undefined,
     };
   }
   return schema;

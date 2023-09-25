@@ -119,19 +119,20 @@ export class Controller<TExtend = Record<string, unknown>> {
     try {
       await next();
     } catch (err) {
-      if (isHTTPError(err)) {
-        ctx.body = {
-          message: err.message,
-          errors: err.errors,
-        };
-        ctx.status = err.status;
-        return;
-      }
       if (err instanceof Error) {
-        ctx.body = {
-          message: err.message,
-        };
-        ctx.status = 500;
+        if (isHTTPError(err)) {
+          ctx.body = {
+            message: err.message,
+            errors: err.errors,
+          };
+          ctx.status = err.status;
+        } else {
+          ctx.body = {
+            message: err.message,
+          };
+          ctx.status = 500;
+        }
+        this.service.onError(err);
         return;
       }
     }
@@ -164,7 +165,7 @@ export class Controller<TExtend = Record<string, unknown>> {
       path.toString().startsWith("(")
         ? routeMiddleware
         : [
-            this.errorHandler,
+            this.errorHandler.bind(this),
             ...passedMiddleware.slice(0, passedMiddleware.length - 1),
             validate(definition),
             this.processResponseBody,

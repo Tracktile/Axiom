@@ -1,16 +1,20 @@
 import { QueryClient } from "@tanstack/react-query";
 import { MutableRefObject } from "react";
 
-import { TSchema, Model, Procedure, Static } from "../common";
+import { TSchema, Model, Procedure } from "../common";
 
 import { ReactModel } from "./model";
 import { ReactProcedure } from "./procedure";
 
-type SearchQueryField = {
+export type SearchQueryField = {
   name: string;
+  comparator?: "and" | "or";
   is?: string;
   contains?: string;
   isOneOf?: string[];
+  isLikeOneOf?: string[];
+  isGreaterThan?: string;
+  isLessThan?: string;
 };
 
 export type SearchQuery = {

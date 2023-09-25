@@ -31,7 +31,6 @@ export const serverless = <TExtend = Record<string, never>>(
         ctx.query = event.queryStringParameters;
         await next();
       } catch (err) {
-        console.log(err);
         throw err;
       }
     });

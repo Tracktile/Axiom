@@ -1,10 +1,11 @@
 import { validate as isUUID } from "uuid";
 import { TSchema, TypeGuard } from "@sinclair/typebox";
-import { ValueError, TypeCompiler } from "@sinclair/typebox/compiler";
+import { ValueError } from "@sinclair/typebox/compiler";
 import { Value } from "@sinclair/typebox/value";
 import { TypeSystem } from "@sinclair/typebox/system";
 import { DefaultState, Middleware, Next } from "koa";
 
+import { noAdditionalProperties } from "../common";
 import { BadRequestError } from "./errors";
 import { OperationDefinition, OperationContext } from "./types";
 
@@ -20,29 +21,6 @@ TypeSystem.Format("hexcolor", (value) =>
   /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/i.test(value)
 );
 TypeSystem.Format("date-time", (value) => !isNaN(Date.parse(value)));
-
-function stripAdditionalProperties(schema: TSchema, source: unknown): unknown {
-  if (TypeGuard.TArray(schema) && Array.isArray(source)) {
-    return source.map((item) => stripAdditionalProperties(schema.items, item));
-  }
-  if (
-    TypeGuard.TObject(schema) &&
-    source !== null &&
-    typeof source === "object"
-  ) {
-    const result: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(source)) {
-      if (key in schema.properties) {
-        result[key] = stripAdditionalProperties(
-          schema.properties[key],
-          value as Record<string, unknown>
-        );
-      }
-    }
-    return result;
-  }
-  return source;
-}
 
 export function validate<
   RouteContext extends OperationDefinition<TSchema, TSchema, TSchema, TSchema>,
@@ -64,17 +42,10 @@ export function validate<
       !TypeGuard.TUnknown(context.req) &&
       typeof ctx.request.body !== "undefined"
     ) {
-      const striped = stripAdditionalProperties(context.req, ctx.request.body);
+      const striped = noAdditionalProperties(context.req, ctx.request.body);
+      ctx.request.body = striped;
       const schema = context.req;
-      const check = TypeCompiler.Compile(schema);
-      const casted = Value.Convert(schema, striped);
-      const checked = check.Check(casted);
-
-      if (checked) {
-        ctx.request.body = casted;
-      } else {
-        errors = [...errors, ...check.Errors(ctx.request.body)];
-      }
+      errors = [...errors, ...Value.Errors(schema, ctx.request.body)];
     }
 
     if (errors.length > 0) {
@@ -89,17 +60,10 @@ export function validate<
       ctx.status < 300 &&
       typeof ctx.body !== "undefined"
     ) {
-      const striped = stripAdditionalProperties(context.res, ctx.body);
+      const striped = noAdditionalProperties(context.res, ctx.body);
+      ctx.body = striped;
       const schema = context.res;
-      const check = TypeCompiler.Compile(schema);
-      const convert = Value.Convert(schema, striped);
-      const checked = check.Check(convert);
-
-      if (checked) {
-        ctx.body = convert;
-      } else {
-        errors = [...errors, ...check.Errors(ctx.body)];
-      }
+      errors = [...errors, ...Value.Errors(schema, ctx.body)];
     }
 
     if (errors.length > 0) {

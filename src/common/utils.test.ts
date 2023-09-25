@@ -5,10 +5,11 @@ import {
   withDefaultsForStringFormats,
   noAdditionalProperties,
   shallowSchemaProperties,
+  withNoStringFormats,
 } from "./utils";
 
 describe("noEmptyStringValues()", () => {
-  it("should remove keys from an object if their value is an empty stirng", () => {
+  it("should remove keys from an object if their value is an empty string", () => {
     const obj = { hello: "world", goodbye: "", test: 1 };
     expect(noEmptyStringValues(obj)).toEqual({ hello: "world", test: 1 });
   });
@@ -26,6 +27,22 @@ describe("withDefaultsForStringFormats", () => {
   });
 });
 
+describe("withNoStringFormats", () => {
+  it("should not remove string values on cast if a value actually exists", () => {
+    const schema = T.Object({
+      anyString: T.String(),
+      stringWithFormat: T.String({ format: "uuid" }),
+    });
+    const input = {
+      anyString: "hello",
+      stringWithFormat: "world",
+    };
+
+    const updatedSchema = withNoStringFormats(schema);
+    expect(Value.Cast(updatedSchema, input)).toEqual(input);
+  });
+});
+
 describe("noAdditionalPropertiesNew", () => {
   it("should work", () => {
     const schema = T.Object({
@@ -35,6 +52,7 @@ describe("noAdditionalPropertiesNew", () => {
         b: T.Number(),
       }),
       b: T.String(),
+      c: T.Array(T.Object({ hi: T.String() })),
     });
     const input = {
       arr: [{ a: "hello", b: 1337, c: "goodbye", d: "??" }],
@@ -44,7 +62,7 @@ describe("noAdditionalPropertiesNew", () => {
         c: "goodbye",
       },
       b: "hello",
-      c: "goodbye",
+      c: [],
       z: "...",
     };
     expect(noAdditionalProperties(schema, input)).toEqual({
@@ -54,6 +72,7 @@ describe("noAdditionalPropertiesNew", () => {
         b: 1337,
       },
       b: "hello",
+      c: [],
     });
   });
 });

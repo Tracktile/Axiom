@@ -41,3 +41,9 @@ export type GetFieldType<T, P> = P extends `${infer Left}.${infer Right}`
         | Extract<T[FieldKey], undefined>
     : undefined
   : undefined;
+
+type NestedKeyOf<ObjectType extends object> = {
+  [Key in keyof ObjectType & (string | number)]: ObjectType[Key] extends object
+    ? `${Key}` | `${Key}.${NestedKeyOf<ObjectType[Key]>}`
+    : `${Key}`;
+}[keyof ObjectType & (string | number)];

@@ -5,6 +5,7 @@ import Router from "@koa/router";
 import KoaQs from "koa-qs";
 
 import { Controller } from "./controller";
+import { convertQueryParamKeysFromKabobCase } from "common";
 
 export type Contact = {
   name: string;
@@ -84,7 +85,7 @@ export class Service<TExtend = Record<string, unknown>> extends Koa<
     middlewares = [],
     internal = false,
     config = DEFAULT_SERVICE_CONFIGURATION,
-    onError = (error: Error) => {},
+    onError = console.error,
   }: ServiceOptions<TExtend>) {
     super();
     this.router = new Router<DefaultState, TExtend>();
@@ -112,6 +113,18 @@ export class Service<TExtend = Record<string, unknown>> extends Koa<
     const serviceRouter = new Router<DefaultState, unknown>();
 
     serviceRouter.use(BodyParser());
+
+    serviceRouter.use(async (ctx, next) => {
+      try {
+        await next();
+      } catch (err) {
+        if (err instanceof Error) {
+          this.onError(err);
+        }
+      }
+    });
+
+    // Transform null's in request bodies back to undefined
     serviceRouter.use((ctx, next) => {
       if (
         ["POST", "PUT", "PATCH"].includes(ctx.method) &&
@@ -127,6 +140,16 @@ export class Service<TExtend = Record<string, unknown>> extends Koa<
       }
       return next();
     });
+
+    // Transform query parameters back from kebab case to dotted format
+    // Ex. customer-name => customer.name
+    serviceRouter.use((ctx, next) => {
+      if (typeof ctx.query === "object") {
+        ctx.query = convertQueryParamKeysFromKabobCase(ctx.query);
+      }
+      return next();
+    });
+
     serviceRouter.use(...this.middleware);
 
     for (const controller of this.controllers) {
