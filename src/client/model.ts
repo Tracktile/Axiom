@@ -102,7 +102,10 @@ export class ReactModel<
     );
 
     // Cast payload to schema
-    const casted = Value.Cast(processedSchema, payload);
+    const casted = Value.Cast(
+      processedSchema,
+      Value.Convert(processedSchema, payload)
+    );
 
     // Map undefined to null
     // Remove empty string values from objects
