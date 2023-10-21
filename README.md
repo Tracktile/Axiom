@@ -6,13 +6,19 @@
 
 ## Features
 
-- :muscle: Based on [Tanstack Query](https://github.com/TanStack/query) and [Typebox](https://github.com/sinclairzx81/typebox).
+- :muscle: Based on [Tanstack Query](https://github.com/TanStack/query) and [Typebox](https://github.com/sinclairzx81/typebox), [Koa](https://github.com/koajs/koa), and [openapi3-ts](https://github.com/metadevpro/openapi3-ts).
 
 - :pencil2: Define your API models once and use them anywhere in your App, frontend or backend.
 
 - :lock: Automatically validate request and response data against your defined model.
 
 - :necktie: Optimistic mutations by default.
+
+- :notebook_with_decorative_cover: Automatically generates an OpenAPI schema describing your API as YAML or JSON.
+
+- :battery: Deploy your API as microservice, or a modular monolith to AWS Lambda using our provided CDK construct.
+
+- :runner: Run all of your services in a single process for local development. Deploy as separate services.
 
 ## Installation
 
