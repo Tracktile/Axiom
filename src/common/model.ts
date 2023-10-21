@@ -18,7 +18,7 @@ export type ModelOptions<
   del?: TDelete;
   query?: TQuery;
   path?: TPath;
-  transformer?: TTransformer;
+  transformer: TTransformer;
 };
 
 export class Model<
@@ -29,8 +29,8 @@ export class Model<
   TQuery extends TSchema = TObject,
   TPath extends TSchema = TObject,
   TTransformer extends (serialized: Static<TModel>) => any = (
-    model: Static<TModel>
-  ) => typeof model,
+    m: Static<TModel>
+  ) => typeof m,
 > {
   name: string;
   resource: string;
@@ -68,9 +68,7 @@ export class Model<
       query: options.query ?? (T.Object({}) as unknown as TQuery),
     };
 
-    const identity = ((model: Static<TModel>) => model as any) as TTransformer;
-
-    this.transformer = options.transformer ?? identity;
+    this.transformer = options.transformer;
   }
 }
 
