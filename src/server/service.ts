@@ -5,7 +5,7 @@ import Router from "@koa/router";
 import KoaQs from "koa-qs";
 
 import { Controller } from "./controller";
-import { convertQueryParamKeysFromKabobCase } from "common";
+import { convertQueryParamKeysFromKabobCase } from "../common";
 import { isHTTPError } from "./errors";
 
 export type Contact = {

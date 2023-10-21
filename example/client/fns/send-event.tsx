@@ -1,4 +1,4 @@
-import { createProcedure, T } from "../../src";
+import { createProcedure, T } from "../../../src";
 
 export const SendEvent = createProcedure({
   name: "SendEvent",

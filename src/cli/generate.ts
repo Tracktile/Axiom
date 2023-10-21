@@ -202,7 +202,7 @@ export async function generate<TContext = Record<string, never>>(
           operationId: kebab(op.name),
           summary: op.summary ?? "No Summary",
           description: !!op.description ? op.description : "No description",
-          tags: op.tags.map(titleCase),
+          tags: op.tags.map((str) => titleCase(str)),
           ...(["post", "put"].includes(op.method)
             ? {
                 requestBody: {

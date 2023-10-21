@@ -1,8 +1,8 @@
 import React from "react";
 
-import { User } from "./models/user";
+import { User } from "../models/user";
 import { SendEvent } from "./fns/send-event";
-import { createApiProvider, createUseApiHook } from "../src/client";
+import { createApiProvider, createUseApiHook } from "../../src/client";
 
 const models = { User };
 const fns = { SendEvent };
@@ -13,8 +13,7 @@ const ApiProvider = createApiProvider({ models, fns });
 function Users() {
   const api = useApi();
 
-  const { data: users, isLoading, fetchNextPage } = api.User.query();
-  const { data: user } = api.User.get(1);
+  const { data: users, isLoading } = api.User.query();
   const { mutate: createUser } = api.User.create();
   const { run: sendEvent } = api.SendEvent.run({ retry: true });
 
@@ -33,8 +32,6 @@ function Users() {
     });
   };
 
-  const handleLoadMore = () => fetchNextPage();
-
   if (isLoading) {
     return <div>Loading Users...</div>;
   }
@@ -46,18 +43,15 @@ function Users() {
         </div>
       ))}
       <button onClick={handleAddUser}>Add User</button>
-      <button onClick={handleLoadMore}>Load More</button>
       <button onClick={handleSendEvent}>Send Event</button>
     </div>
   );
 }
 
-function App() {
+export function App() {
   return (
     <ApiProvider baseUrl="https://gorest.co.in/public/v2">
       <Users />
     </ApiProvider>
   );
 }
-
-export default App;

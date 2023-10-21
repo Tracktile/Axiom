@@ -1,5 +1,5 @@
-import { T } from "../../src/common";
 import { Service, Controller } from "../../src/server";
+import { User } from "../models/user";
 
 const controller = new Controller({
   tags: ["example"],
@@ -7,18 +7,15 @@ const controller = new Controller({
 
 controller.addOperation(
   {
-    name: "GetExample",
-    method: "get",
-    path: "/example",
-    req: T.Object({
-      testString: T.String(),
-    }),
-    res: T.Object({
-      message: T.String(),
-    }),
+    name: "CreateUser",
+    method: "post",
+    path: "/users",
+    req: User.schemas.create,
+    res: User.schemas.model,
   },
   async (ctx, next) => {
-    ctx.body = { message: ctx.request.body.testString };
+    // ctx.request.body is validated and type inferred as User.schemas.create
+    // Create and return the user
     return next();
   }
 );

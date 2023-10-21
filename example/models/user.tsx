@@ -66,7 +66,7 @@ export const User = createModel({
    *
    * If supplying serialize, deserialize is also required.
    */
-  transformer: (model) => ({ hello: "world" }),
+  transformer: (model) => model,
 });
 
 export type User = Static<typeof User.schemas.model>;
