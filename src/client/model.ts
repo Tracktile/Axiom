@@ -494,9 +494,7 @@ export class ReactModel<
     return this.client?.getQueryData(this.modelKeys.search());
   }
 
-  readOne(
-    id: keyof Static<TModel["schemas"]["model"]>
-  ): Static<TModel["schemas"]["model"]> | undefined {
+  readOne(id: string | number): Static<TModel["schemas"]["model"]> | undefined {
     return this.client?.getQueryData(this.modelKeys.get(id));
   }
 }
