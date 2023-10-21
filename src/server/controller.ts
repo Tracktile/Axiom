@@ -109,35 +109,6 @@ export class Controller<TExtend = Record<string, unknown>> {
     };
   }
 
-  private async errorHandler(
-    ctx: OperationContext<
-      OperationDefinition<TSchema, TSchema, TSchema, TSchema>,
-      TExtend
-    >,
-    next: Next
-  ) {
-    try {
-      await next();
-    } catch (err) {
-      if (err instanceof Error) {
-        if (isHTTPError(err)) {
-          ctx.body = {
-            message: err.message,
-            errors: err.errors,
-          };
-          ctx.status = err.status;
-        } else {
-          ctx.body = {
-            message: err.message,
-          };
-          ctx.status = 500;
-        }
-        this.service.onError(err);
-        return;
-      }
-    }
-  }
-
   private processResponseBody = async (
     ctx: OperationContext<
       OperationDefinition<TSchema, TSchema, TSchema, TSchema>,
@@ -165,7 +136,6 @@ export class Controller<TExtend = Record<string, unknown>> {
       path.toString().startsWith("(")
         ? routeMiddleware
         : [
-            this.errorHandler.bind(this),
             ...passedMiddleware.slice(0, passedMiddleware.length - 1),
             validate(definition),
             this.processResponseBody,

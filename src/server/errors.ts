@@ -1,5 +1,4 @@
 import { CustomError } from "ts-custom-error";
-import type { ValueError } from "@sinclair/typebox/compiler";
 
 export enum Errors {
   // 400
@@ -20,7 +19,7 @@ class HTTPError extends CustomError {
   errors: Record<string, unknown>;
   constructor(
     status: number,
-    message?: string,
+    message: string,
     errors: Record<string, string> = {}
   ) {
     super(message);
@@ -35,21 +34,8 @@ export function isHTTPError(error: unknown): error is HTTPError {
 
 export class BadRequestError extends HTTPError {
   type = Errors.BadRequest;
-  constructor(message?: string, errors: ValueError[] = []) {
-    super(
-      400,
-      message || "Bad Request",
-      errors.reduce(
-        (acc, { path, message }) => ({
-          ...acc,
-          [(path.startsWith("/") ? path.slice(1, path.length) : path).replace(
-            "/",
-            "."
-          )]: message,
-        }),
-        {} as Record<string, string>
-      )
-    );
+  constructor(message?: string, fields: Record<string, string> = {}) {
+    super(400, message || "Bad Request", fields);
   }
 }
 export class UnauthorizedError extends HTTPError {

@@ -1,6 +1,6 @@
 {
   "name": "@tracktile/axiom",
-  "version": "1.0.0-beta.138",
+  "version": "1.0.0-beta.144",
   "description": "Dead simple, Opinionated, and Type Safe framework for building APIs with React Frontends.",
   "homepage": "https://github.com/Tracktile/Axiom",
   "license": "MIT",
@@ -10,8 +10,8 @@
     "url": "https://github.com/Tracktile/Axiom.git"
   },
   "scripts": {
-    "clean": "rimraf ./*.mjs ./*.mjs.map ./*.d.ts ./*.d.mts ./*.js ./*.js.map",
     "test": "CI=true vitest --globals --coverage",
+    "prebuild": "rimraf ./*.mjs ./*.mjs.map ./*.d.ts ./*.d.mts ./*.js ./*.js.map",
     "build": "tsup"
   },
   "bin": {
@@ -73,6 +73,7 @@
     "@babel/preset-typescript": "^7.22.5",
     "@swc/core": "^1.3.83",
     "@types/aws-lambda": "^8.10.119",
+    "@types/debug": "^4.1.9",
     "@types/jest": "^29.5.3",
     "@types/koa": "^2.13.8",
     "@types/koa-bodyparser": "^4.3.10",

@@ -168,10 +168,13 @@ export class ReactModel<
         });
       },
       onError: (
-        _err: Error,
+        err: Error,
         item: Static<TModel["schemas"]["model"]>,
         context?: TContext<Static<TModel["schemas"]["model"]>>
       ) => {
+        if (err) {
+          console.log(err);
+        }
         if (!!context?.previous) {
           if (!this.client) {
             throw new Error("Client is not bound");
@@ -230,10 +233,13 @@ export class ReactModel<
         });
       },
       onError: (
-        _err: Error,
+        err: Error,
         item: Static<TModel["schemas"]["model"]>,
         context?: TContext<Static<TModel["schemas"]["model"]>>
       ) => {
+        if (err) {
+          console.log(err);
+        }
         if (!!context?.previous) {
           if (!this.client) {
             throw new Error("Client is not bound");
@@ -286,10 +292,13 @@ export class ReactModel<
         });
       },
       onError: (
-        _err: Error,
+        err: Error,
         item: Static<TModel["schemas"]["model"]>,
         context?: TContext<Static<TModel["schemas"]["model"]>>
       ) => {
+        if (err) {
+          console.log(err);
+        }
         if (typeof context?.previous !== "undefined") {
           this.client?.setQueryData(
             this.modelKeys.get(item[this.model.idKey]),

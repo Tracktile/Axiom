@@ -33,7 +33,7 @@ export type OperationDefinition<
   TRes extends TSchema,
 > = {
   name: string;
-  method: "get" | "post" | "put" | "delete";
+  method: "get" | "post" | "put" | "patch" | "delete";
   summary: string;
   description: string;
   path: string;

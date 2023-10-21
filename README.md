@@ -2,13 +2,13 @@
   <img  src="https://i.imgur.com/w98C6Oy.png"  />
 </p>
  
- <p  align="center">A very opinionated API client with built in caching, offline storage, validation, and more. Powered internally by @tanstack/react-query</p>
+ <p  align="center">Build APIs and consume them in React apps with complete type safety, optimistic mutations, and offline first functionality.</p>
 
 ## Features
 
 - :muscle: Based on [Tanstack Query](https://github.com/TanStack/query) and [Typebox](https://github.com/sinclairzx81/typebox).
 
-- :pencil2: Define your API models once and use them anywhere in your App.
+- :pencil2: Define your API models once and use them anywhere in your App, frontend or backend.
 
 - :lock: Automatically validate request and response data against your defined model.
 
@@ -22,11 +22,12 @@
 
 ## Usage
 
-```typescript
-import { createModel, createProcedure, createApiProvider, T } from '@tracktile/axiom';
+### Models
 
-// Create an API Model
-// Models come with offline and optimistic mutation by default.
+```typescript
+import { createModel, T } from "@tracktile/axiom";
+
+// Declare a model to be used across your app.
 export const User = createModel({
   name: "User",
   resource: "/users",
@@ -38,9 +39,17 @@ export const User = createModel({
   }),
   create: T.Object({
     name: T.String(),
-    email: T.String()
-  })
+    email: T.String(),
+  }),
 });
+```
+
+### Client
+
+```typescript
+
+import { createProcedure, T } from '@tracktile/axiom';
+import { createUseApiHook, createApiProvider } from "@tracktile/axiom/client";
 
 // Create a procedure
 // Procedures are not cached and represent RPC calls
@@ -56,7 +65,7 @@ export const SendAlert = createProcedure({
 });
 
 // Collect your models
-const models = { User }
+  const models = { User }
 
 // Collect your procedures
 const fns = { SendAlert }
@@ -101,6 +110,45 @@ const App = () =>
   <ApiProvider baseUrl="https://my.awesome.backend">
     <MyAwesomeComponent>
   </ApiProvider>
+```
+
+### Server
+
+```typescript
+import { T } from "@tracktile/axiom";
+import { Service, Controller, serverless } from "@tracktile/axiom/server";
+
+const controller = new Controller({
+  tags: ["example"],
+});
+
+controller.addOperation(
+  {
+    name: "CreateUser",
+    method: "post",
+    path: "/users",
+    req: User.schemas.create,
+    res: User.schemas.model,
+  },
+  async (ctx, next) => {
+    // ctx.request.body is validated and type inferred as User.schemas.create
+    // Create and return the user
+    return next();
+  }
+);
+
+const service = new Service({
+  title: "example",
+  description: "Example service",
+  version: "1.0.0",
+  controllers: [controller],
+});
+
+// Start a local server
+service.start(3000);
+
+// Or mount your API inside of an Lambda function
+exports.handler = serverless(service);
 ```
 
 ## Examples

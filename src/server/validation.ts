@@ -9,6 +9,19 @@ import { noAdditionalProperties } from "../common";
 import { BadRequestError } from "./errors";
 import { OperationDefinition, OperationContext } from "./types";
 
+function parseValueErrors(errors: ValueError[]): Record<string, string> {
+  return errors.reduce(
+    (acc, { path, message }) => ({
+      ...acc,
+      [(path.startsWith("/") ? path.slice(1, path.length) : path).replace(
+        "/",
+        "."
+      )]: message,
+    }),
+    {} as Record<string, string>
+  );
+}
+
 TypeSystem.Format(
   "palindrome",
   (value) => value === value.split("").reverse().join("")
@@ -49,7 +62,7 @@ export function validate<
     }
 
     if (errors.length > 0) {
-      throw new BadRequestError("Invalid Request", errors);
+      throw new BadRequestError("Invalid Request", parseValueErrors(errors));
     }
 
     await next();
@@ -67,7 +80,7 @@ export function validate<
     }
 
     if (errors.length > 0) {
-      throw new BadRequestError("Invalid Response", errors);
+      throw new BadRequestError("Invalid Response", parseValueErrors(errors));
     }
   };
 }

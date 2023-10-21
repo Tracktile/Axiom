@@ -62,7 +62,7 @@ export class CombinedService<
  *
  * This method skips the regular bind phase of each service and instead creates an independent
  * Router for each service on which that services middleware and individual controllers are mounted
- * and the appropriate prefix.
+ * at the appropriate prefix.
  */
 export function combineServices<TExtend = Record<string, never>>(
   services: Service<TExtend>[],
@@ -82,6 +82,7 @@ export function combineServices<TExtend = Record<string, never>>(
   for (const service of services) {
     service.config = combinedConfig;
     service.init(combinedService.router);
+    service.onError = combinedService.onError;
   }
 
   return combinedService;

@@ -1,9 +1,11 @@
 import { stringify } from "qs";
 import { MutableRefObject } from "react";
+import debug from "debug";
 
 import { Static, TSchema, convertQueryParamKeysToKabobCase } from "../common";
 import { PaginationParams } from "./model";
-import { Query } from "@tanstack/react-query";
+
+const log = debug("axiom:request");
 
 export type QueryParameters = Record<
   string,
@@ -52,13 +54,16 @@ export async function request<TRequestBody, TResponseBody = TRequestBody>(
   const queryString = stringify(cleanedQuery);
   const uri = `${url}${!!queryString ? `?${queryString}` : ""}`;
 
+  const requestHeaders = {
+    "Content-Type": "application/json",
+    ...(!!token ? { Authorization: `Bearer ${token}` } : {}),
+    ...headers,
+  };
+
+  log(`${method} ${uri}`, { body, headers: requestHeaders, token });
   const resp = await fetch(uri, {
     method,
-    headers: {
-      "Content-Type": "application/json",
-      ...(!!token ? { Authorization: `Bearer ${token}` } : {}),
-      ...headers,
-    },
+    headers: requestHeaders,
     body: ["post", "put"].includes(method.toLowerCase())
       ? JSON.stringify(body)
       : undefined,
@@ -68,6 +73,8 @@ export async function request<TRequestBody, TResponseBody = TRequestBody>(
     const { message } = await resp.json();
     throw new Error(message);
   }
+
+  log(`${method} ${uri} - ${resp.status} ${resp.statusText}`, resp.text);
 
   const responseHeaders: Record<string, string> = {};
   for (const pair of resp.headers.entries()) {

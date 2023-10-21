@@ -6,6 +6,7 @@ import KoaQs from "koa-qs";
 
 import { Controller } from "./controller";
 import { convertQueryParamKeysFromKabobCase } from "common";
+import { isHTTPError } from "./errors";
 
 export type Contact = {
   name: string;
@@ -119,7 +120,20 @@ export class Service<TExtend = Record<string, unknown>> extends Koa<
         await next();
       } catch (err) {
         if (err instanceof Error) {
+          if (isHTTPError(err)) {
+            ctx.body = {
+              message: err.message,
+              errors: err.errors,
+            };
+            ctx.status = err.status;
+          } else {
+            ctx.body = {
+              message: err.message,
+            };
+            ctx.status = 500;
+          }
           this.onError(err);
+          return;
         }
       }
     });
