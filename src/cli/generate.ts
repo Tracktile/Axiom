@@ -1,6 +1,6 @@
 import "reflect-metadata";
 import kebabCase from "kebab-case";
-import { titleCase } from "title-case";
+import { debug } from "debug";
 import { TSchema, TypeGuard } from "@sinclair/typebox";
 import convert from "@openapi-contrib/json-schema-to-openapi-schema";
 import * as oa from "openapi3-ts";
@@ -8,6 +8,8 @@ import * as oa from "openapi3-ts";
 import { OperationDefinition } from "../server/types";
 import { Service } from "../server/service";
 import { CombinedService, isCombinedService } from "../server/combined-service";
+
+const log = debug("axiom:cli:generate");
 
 export type Services<TContext = Record<string, never>> = {
   resource: string;
@@ -34,7 +36,10 @@ const formatPath = (path: string) => {
     : converted;
 };
 
-const kebab = (str: string) => kebabCase(str).substring(1);
+const kebab = (str: string) => {
+  const noSpaces = str.replace(/\s/g, "");
+  return kebabCase(noSpaces).substring(1).toLocaleLowerCase();
+};
 
 interface GenerateOptions {
   format: "json" | "yaml";
@@ -48,6 +53,7 @@ export async function generate<TContext = Record<string, never>>(
   target: Service<TContext> | CombinedService<TContext>,
   { format = "yaml" }: GenerateOptions = DEFAULT_GENERATE_OPTIONS
 ) {
+  log("Generating OpenAPI spec from service", target);
   const spec = oa.oas30.OpenApiBuilder.create()
     .addTitle(target.title)
     .addDescription(target.description)
@@ -129,13 +135,23 @@ export async function generate<TContext = Record<string, never>>(
       },
     });
 
+  if (target.license) {
+    spec.addLicense(target.license);
+  }
+
+  for (const server of target.servers) {
+    spec.addServer(server);
+  }
+
   if (isCombinedService(target)) {
+    log("Input is a combined service - adding tags for each service");
     target.children.forEach((service) => {
+      log(`Adding for service ${service.title}`);
       spec.addTag({
-        name: titleCase(service.title),
+        name: service.title,
         description: service.description,
       });
-      service.tags = [titleCase(service.title)];
+      service.tags = [service.title];
     });
   }
 
@@ -144,13 +160,23 @@ export async function generate<TContext = Record<string, never>>(
     OperationDefinition<TSchema, TSchema, TSchema, TSchema>[]
   > = {};
 
+  log("Iterating over services");
+
   const services = isCombinedService(target) ? target.children : [target];
 
+  log(`Found ${services.length} services`);
+
   services.forEach((service) => {
+    log(`Adding controllers for service ${service.title}`);
     service.controllers.forEach((controller) => {
       const ops = controller.getOperations();
-
+      log(`Found ${ops.length} operations for controller`);
       ops.forEach(([op]) => {
+        log(
+          `Operation: ${op.method.toUpperCase()} ${controller.prefix}${
+            op.path
+          }: ${op.name}`
+        );
         const path = `${
           ["", "/"].includes(service.prefix) ? "" : service.prefix
         }${controller.prefix}${op.path}`;
@@ -167,11 +193,16 @@ export async function generate<TContext = Record<string, never>>(
     });
   });
 
+  log("Iterating over operations by path to generate path parameters");
+
   for (const path of Object.keys(operationsByPath)) {
+    log(`Generating path parameters for path ${path}`);
     let pathObj: oa.oas30.PathItemObject = {};
     const operations = operationsByPath[path];
+    log(`Found ${operations.length} operations for path ${path}`);
 
     const [first] = operations;
+    log(`First operation: ${first.name} ${first.method} ${first.path}`);
 
     pathObj.parameters = Object.keys(first.params.properties).map((key) => ({
       name: key,
@@ -183,7 +214,10 @@ export async function generate<TContext = Record<string, never>>(
       examples: first.params.properties[key].examples,
     }));
 
+    log(`Path parameters: ${JSON.stringify(pathObj.parameters)}`);
+
     for (const op of operations) {
+      log(`Generating operation ${op.name} ${op.method} ${op.path}`);
       if (!TypeGuard.TObject(op.params)) {
         throw new Error(
           `Invalid parameters provided to route, must be T.Object. ${op.name} ${op.method} ${op.path}`
@@ -196,13 +230,16 @@ export async function generate<TContext = Record<string, never>>(
         );
       }
 
+      log(`req`, JSON.stringify(op.req, null, ""));
+      log(`res`, JSON.stringify(op.res, null, ""));
+
       pathObj = {
         ...pathObj,
         [op.method]: {
-          operationId: kebab(op.name),
+          operationId: `${op.method}-${kebab(op.name)}`,
           summary: op.summary ?? "No Summary",
           description: !!op.description ? op.description : "No description",
-          tags: op.tags.map((str) => titleCase(str)),
+          tags: op.tags,
           ...(["post", "put"].includes(op.method)
             ? {
                 requestBody: {
@@ -239,6 +276,8 @@ export async function generate<TContext = Record<string, never>>(
         } as oa.oas30.OperationObject,
       };
     }
+
+    log(`Adding path ${path}`);
 
     spec.addPath(formatPath(path), pathObj);
   }

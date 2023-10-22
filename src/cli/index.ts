@@ -3,8 +3,12 @@
 import fs from "fs";
 import path from "path";
 import { parse } from "ts-command-line-args";
+import { debug } from "debug";
 
+import { Service, isCombinedService, isService } from "../server";
 import { generate } from "./generate";
+
+const log = debug("axiom:cli");
 
 interface ICopyFilesArguments {
   input: string;
@@ -97,13 +101,25 @@ const processArgs = () => {
   }
 };
 
+const recurseDefaultExports = (imported: any): any => {
+  if (imported.default) {
+    return recurseDefaultExports(imported.default);
+  }
+  return imported;
+};
+
 async function main() {
   try {
     const args = processArgs();
-    const { default: service } = await import(args.input);
+    log(`Importing from ${args.input}`);
+
+    const imported = await import(args.input);
+    const service = recurseDefaultExports(imported);
+
     const content = await generate(service, {
       format: args.json ? "json" : "yaml",
     });
+
     fs.writeFileSync(args.output, content, { encoding: "utf8" });
     process.exit(0);
   } catch (err) {

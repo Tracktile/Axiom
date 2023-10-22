@@ -8,6 +8,9 @@ import { Controller } from "./controller";
 import { convertQueryParamKeysFromKabobCase } from "../common";
 import { isHTTPError } from "./errors";
 
+import Debug from "debug";
+const log = Debug("axiom:server");
+
 export type Contact = {
   name: string;
   email: string;
@@ -52,6 +55,16 @@ export interface ServiceConfiguration {
 export const DEFAULT_SERVICE_CONFIGURATION: ServiceConfiguration = {
   cors: {},
 } as const;
+
+export function isService(service: any): service is Service {
+  log("Checking if service is a Service", service);
+  return (
+    typeof service.title === "string" &&
+    typeof service.description === "string" &&
+    Array.isArray(service.tags) &&
+    typeof service.prefix === "string"
+  );
+}
 
 export class Service<TExtend = Record<string, unknown>> extends Koa<
   DefaultState,

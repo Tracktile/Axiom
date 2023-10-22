@@ -28,3 +28,5 @@ const service = new Service({
 });
 
 service.start(3000);
+
+export default service;

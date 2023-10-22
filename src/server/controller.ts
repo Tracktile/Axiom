@@ -4,7 +4,6 @@ import { DefaultState, Middleware, Next } from "koa";
 import { T, TSchema } from "../common";
 import { Service } from "./service";
 import { OperationDefinition, OperationContext, Operation } from "./types";
-import { isHTTPError } from "./errors";
 import { compose } from "./middleware";
 import { validate } from "./validation";
 

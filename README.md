@@ -157,6 +157,14 @@ service.start(3000);
 exports.handler = serverless(service);
 ```
 
+### Generate OpenAPI Documentation
+
+```sh
+axiom --in=./myService.ts --out=./my-api-schema.yaml --yaml
+OR
+axiom --in=./myCombinedServices.ts --out=./my-api-schema.json --json
+```
+
 ## Examples
 
 Small example project can be found in the [example/](./example) folder.

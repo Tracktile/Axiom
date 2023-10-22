@@ -6,7 +6,9 @@ import {
   Contact,
   License,
   Server,
+  isService,
 } from "./service";
+import { registerFormats } from "./validation";
 
 export interface CombinedServiceConfiguration extends ServiceConfiguration {
   title?: string;
@@ -42,7 +44,11 @@ export const DEFAULT_COMBINED_SERVICE_CONFIGURATION = {
 export function isCombinedService<TExtend = Record<string, never>>(
   service: Service<TExtend> | CombinedService<TExtend>
 ): service is CombinedService<TExtend> {
-  return "children" in service && Array.isArray(service.children);
+  return (
+    "children" in service &&
+    Array.isArray(service.children) &&
+    service.children.length > 0
+  );
 }
 
 export class CombinedService<
@@ -73,10 +79,12 @@ export function combineServices<TExtend = Record<string, never>>(
     ...config,
   };
   const combinedService = new CombinedService<TExtend>({
+    servers: combinedConfig.servers,
     title: combinedConfig.title,
     description: combinedConfig.description,
     tags: combinedConfig.tags,
     children: services,
+    license: combinedConfig.license,
   });
 
   for (const service of services) {
