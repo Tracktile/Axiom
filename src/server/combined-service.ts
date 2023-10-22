@@ -8,7 +8,6 @@ import {
   Server,
   isService,
 } from "./service";
-import { registerFormats } from "./validation";
 
 export interface CombinedServiceConfiguration extends ServiceConfiguration {
   title?: string;
