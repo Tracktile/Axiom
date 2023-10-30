@@ -106,6 +106,34 @@ export function withNoStringFormats<T extends TSchema>(schema: T): T {
   return schema;
 }
 
+export function withNoEnumValues<T extends TSchema>(schema: T): T {
+  console.log(schema);
+  if (TypeGuard.TArray(schema)) {
+    return { ...schema, items: withNoEnumValues(schema.items) };
+  }
+  if (TypeGuard.TObject(schema)) {
+    return {
+      ...schema,
+      properties: Object.fromEntries(
+        Object.entries(schema.properties)
+          .filter(([, value]) => {
+            console.log(value, TypeGuard.TUnion(value));
+            return !TypeGuard.TUnion(value);
+          })
+          .map(([key, value]) => [key, withNoEnumValues(value)])
+      ),
+    };
+  }
+  return schema;
+  // if (TypeGuard.TString(schema) && typeof schema.format !== "undefined") {
+  //   return {
+  //     ...schema,
+  //     format: undefined,
+  //   };
+  // }
+  return schema;
+}
+
 export function noEmptyStringValues<T extends object>(obj: T): Partial<T> {
   return Object.entries(obj).reduce((acc, [key, val]) => {
     if (val !== "") {

@@ -6,6 +6,7 @@ import {
   noAdditionalProperties,
   shallowSchemaProperties,
   withNoStringFormats,
+  withNoEnumValues,
 } from "./utils";
 
 describe("noEmptyStringValues()", () => {
@@ -106,5 +107,23 @@ describe("undefinedToNull", () => {
       b: "string",
       c: 0,
     });
+  });
+});
+
+enum WeirdEnum {
+  NEW = "NEW",
+  OLD = "OLD",
+}
+
+describe("withNoEnumValues", () => {
+  it("should remove enums from schema", () => {
+    const updatedSchema = withNoEnumValues(
+      T.Object({
+        anyEnum: T.Enum(WeirdEnum),
+        anyStr: T.String(),
+        anyNum: T.Number(),
+      })
+    );
+    expect(Value.Create(updatedSchema)).toEqual({ anyStr: "", anyNum: 0 });
   });
 });
