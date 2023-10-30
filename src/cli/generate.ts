@@ -43,6 +43,7 @@ const kebab = (str: string) => {
 
 interface GenerateOptions {
   format: "json" | "yaml";
+  isPublic?: boolean;
 }
 
 const DEFAULT_GENERATE_OPTIONS: GenerateOptions = {
@@ -51,7 +52,10 @@ const DEFAULT_GENERATE_OPTIONS: GenerateOptions = {
 
 export async function generate<TContext = Record<string, never>>(
   target: Service<TContext> | CombinedService<TContext>,
-  { format = "yaml" }: GenerateOptions = DEFAULT_GENERATE_OPTIONS
+  {
+    format = "yaml",
+    isPublic = true,
+  }: GenerateOptions = DEFAULT_GENERATE_OPTIONS
 ) {
   log("Generating OpenAPI spec from service", target);
   const spec = oa.oas30.OpenApiBuilder.create()
@@ -198,21 +202,27 @@ export async function generate<TContext = Record<string, never>>(
   for (const path of Object.keys(operationsByPath)) {
     log(`Generating path parameters for path ${path}`);
     let pathObj: oa.oas30.PathItemObject = {};
-    const operations = operationsByPath[path];
+    const operations = operationsByPath[path].filter((op) => {
+      log({ isPublic, opIsPublic: op.isPublic });
+
+      return op.isPublic || !isPublic;
+    });
     log(`Found ${operations.length} operations for path ${path}`);
 
     const [first] = operations;
-    log(`First operation: ${first.name} ${first.method} ${first.path}`);
+    if (first) {
+      log(`First operation: ${first.name} ${first.method} ${first.path}`);
 
-    pathObj.parameters = Object.keys(first.params.properties).map((key) => ({
-      name: key,
-      in: "path",
-      required: first.params.required.includes(key),
-      schema: { type: "string", format: first.params.properties[key].format },
-      description: first.params.properties[key].description,
-      example: first.params.properties[key].example,
-      examples: first.params.properties[key].examples,
-    }));
+      pathObj.parameters = Object.keys(first.params.properties).map((key) => ({
+        name: key,
+        in: "path",
+        required: first.params.required.includes(key),
+        schema: { type: "string", format: first.params.properties[key].format },
+        description: first.params.properties[key].description,
+        example: first.params.properties[key].example,
+        examples: first.params.properties[key].examples,
+      }));
+    }
 
     log(`Path parameters: ${JSON.stringify(pathObj.parameters)}`);
 
@@ -236,7 +246,7 @@ export async function generate<TContext = Record<string, never>>(
       pathObj = {
         ...pathObj,
         [op.method]: {
-          operationId: `${op.method}-${kebab(op.name)}`,
+          operationId: kebab(op.name),
           summary: op.summary ?? "No Summary",
           description: !!op.description ? op.description : "No description",
           tags: op.tags,
@@ -277,7 +287,7 @@ export async function generate<TContext = Record<string, never>>(
       };
     }
 
-    log(`Adding path ${path}`);
+    log(`Adding path ${path}`, pathObj);
 
     spec.addPath(formatPath(path), pathObj);
   }

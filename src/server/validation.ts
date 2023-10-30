@@ -8,20 +8,18 @@ import { TypeSystem, noAdditionalProperties } from "../common";
 import { BadRequestError } from "./errors";
 import { OperationDefinition, OperationContext } from "./types";
 
-export function registerTypes() {
-  TypeSystem.Format(
-    "palindrome",
-    (value) => value === value.split("").reverse().join("")
-  );
-  TypeSystem.Format("email", (value) =>
-    /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(value)
-  );
-  TypeSystem.Format("uuid", (value) => isUUID(value));
-  TypeSystem.Format("hexcolor", (value) =>
-    /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/i.test(value)
-  );
-  TypeSystem.Format("date-time", (value) => !isNaN(Date.parse(value)));
-}
+TypeSystem.Format(
+  "palindrome",
+  (value) => value === value.split("").reverse().join("")
+);
+TypeSystem.Format("email", (value) =>
+  /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(value)
+);
+TypeSystem.Format("uuid", (value) => isUUID(value));
+TypeSystem.Format("hexcolor", (value) =>
+  /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/i.test(value)
+);
+TypeSystem.Format("date-time", (value) => !isNaN(Date.parse(value)));
 
 function parseValueErrors(errors: ValueError[]): Record<string, string> {
   return errors.reduce(
@@ -63,6 +61,7 @@ export function validate<
     }
 
     if (errors.length > 0) {
+      console.log(errors);
       throw new BadRequestError("Invalid Request", parseValueErrors(errors));
     }
 

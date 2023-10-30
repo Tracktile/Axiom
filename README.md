@@ -65,7 +65,7 @@ export const SendAlert = createProcedure({
   resource: "/events",
   params: T.Object({
     message: T.String(),
-    time: T.String({ format: "date-time" }),
+    time: T.Date({ format: "date-time" }),
   }),
   result: T.Boolean(),
 });

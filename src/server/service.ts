@@ -145,7 +145,9 @@ export class Service<TExtend = Record<string, unknown>> extends Koa<
             };
             ctx.status = 500;
           }
+          log("error", err);
           this.onError(err);
+
           return;
         }
       }
