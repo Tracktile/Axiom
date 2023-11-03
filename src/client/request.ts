@@ -30,9 +30,25 @@ export function buildResourcePath<
     ? resource.substr(1)
     : resource;
   const url = `${cleanBaseUrl}/${cleanResource}`;
-  return Object.entries(params).reduce((acc, [key, val]) => {
-    return acc.replace(`:${key}`, val.toString());
-  }, url);
+  const paramsForResource = Object.keys(params).filter((key) =>
+    url.includes(`:${key}`)
+  );
+  const paramsForQuery = Object.keys(params).filter(
+    (key) => !paramsForResource.includes(key)
+  );
+  const urlWithParams = Object.entries(paramsForResource).reduce(
+    (acc, [key, val]) => {
+      return acc.replace(`:${key}`, val.toString());
+    },
+    url
+  );
+  const urlWithQuery = Object.entries(paramsForQuery).reduce(
+    (acc, [key, val]) => {
+      return `${acc}${acc.includes("?") ? "&" : "?"}${key}=${val}`;
+    },
+    urlWithParams
+  );
+  return urlWithQuery;
 }
 
 export async function request<TRequestBody, TResponseBody = TRequestBody>(

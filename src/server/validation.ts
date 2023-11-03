@@ -61,7 +61,6 @@ export function validate<
     }
 
     if (errors.length > 0) {
-      console.log(errors);
       throw new BadRequestError("Invalid Request", parseValueErrors(errors));
     }
 
