@@ -5,8 +5,8 @@ import {
   useMutation,
 } from "@tanstack/react-query";
 
-import { Static, TSchema } from "../common";
-import { buildResourcePath, request } from "./request";
+import { Static, TSchema, convertQueryParamKeysToKabobCase } from "../common";
+import { buildResourcePath, paramsForQuery, request } from "./request";
 import { Procedure } from "common/procedure";
 
 export interface ReactProcedureOptions<
@@ -54,14 +54,20 @@ export class ReactProcedure<TProcedure extends Procedure<any, any>> {
       mutationFn: async (
         params: Static<TProcedure["params"]>
       ): Promise<Static<TProcedure["result"]>> => {
-        const [resp] = await request<Static<TProcedure["result"]>>(
-          buildResourcePath(this.baseUrl, this.procedure.resource, params),
-          {
-            method: this.procedure.method,
-            body: params,
-            token: this.token.current,
-          }
+        const url = buildResourcePath(
+          this.baseUrl,
+          this.procedure.resource,
+          params
         );
+        const paramsForQ = paramsForQuery(url, params);
+        const query = convertQueryParamKeysToKabobCase(paramsForQ);
+        console.log({ baseUrl: this.baseUrl, params, url, paramsForQ, query });
+        const [resp] = await request<Static<TProcedure["result"]>>(url, {
+          method: this.procedure.method,
+          body: params,
+          token: this.token.current,
+          query,
+        });
         return resp;
       },
       ...options,

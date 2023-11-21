@@ -4,22 +4,29 @@ import { ValueError } from "@sinclair/typebox/compiler";
 import { Value } from "@sinclair/typebox/value";
 import { DefaultState, Middleware, Next } from "koa";
 
-import { TypeSystem, noAdditionalProperties } from "../common";
+import {
+  TypeSystem,
+  noAdditionalProperties,
+  trueFalseStringsToBoolean,
+} from "../common";
 import { BadRequestError } from "./errors";
 import { OperationDefinition, OperationContext } from "./types";
 
-TypeSystem.Format(
-  "palindrome",
-  (value) => value === value.split("").reverse().join("")
-);
-TypeSystem.Format("email", (value) =>
-  /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(value)
-);
-TypeSystem.Format("uuid", (value) => isUUID(value));
-TypeSystem.Format("hexcolor", (value) =>
-  /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/i.test(value)
-);
-TypeSystem.Format("date-time", (value) => !isNaN(Date.parse(value)));
+type FormatValidator = (value: string) => boolean;
+
+const formats: Record<string, FormatValidator> = {
+  palindrome: (v) => /^[a-zA-Z0-9]*$/.test(v),
+  email: (v) => /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(v),
+  uuid: (v) => /^[a-f\d]{8}(-[a-f\d]{4}){4}[a-f\d]{8}$/i.test(v),
+  hexcolor: (v) => /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/i.test(v),
+  "date-time": (v) => !isNaN(Date.parse(v)),
+};
+
+Object.entries(formats).forEach(([name, validatorFn]) => {
+  try {
+    TypeSystem.Format(name, (value) => validatorFn(value));
+  } catch {}
+});
 
 function parseValueErrors(errors: ValueError[]): Record<string, string> {
   return errors.reduce(
@@ -43,7 +50,10 @@ export function validate<
   return async (ctx: OperationContext<RouteContext, TExtend>, next: Next) => {
     let errors: ValueError[] = [];
     if (context.query) {
-      errors = [...errors, ...Value.Errors(context.query, ctx.query)];
+      errors = [
+        ...errors,
+        ...Value.Errors(context.query, trueFalseStringsToBoolean(ctx.query)),
+      ];
     }
     if (context.params) {
       errors = [...errors, ...Value.Errors(context.params, ctx.params)];
@@ -56,8 +66,10 @@ export function validate<
     ) {
       const striped = noAdditionalProperties(context.req, ctx.request.body);
       ctx.request.body = striped;
+      console.log("validating body", striped);
       const schema = context.req;
       errors = [...errors, ...Value.Errors(schema, ctx.request.body)];
+      console.log("ERRORS", errors);
     }
 
     if (errors.length > 0) {

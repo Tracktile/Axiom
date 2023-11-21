@@ -1,4 +1,5 @@
 import { Type, Static, TSchema, TypeGuard, TObject } from "@sinclair/typebox";
+import { Value } from "@sinclair/typebox/value";
 import { GetFieldType } from "./types";
 
 export function convertQueryParamKeysToKabobCase<T extends object>(obj: T) {
@@ -177,4 +178,17 @@ export function undefinedToNull<T extends object>(input: T) {
       value === undefined ? null : value,
     ])
   );
+}
+
+export function trueFalseStringsToBoolean<T extends object>(input: T) {
+  return Object.fromEntries(
+    Object.entries(input).map(([key, value]) => [
+      key,
+      value === "true" ? true : value === "false" ? false : value,
+    ])
+  );
+}
+
+export function cast<T extends TSchema>(schema: T, value: unknown) {
+  return Value.Cast(schema, value);
 }

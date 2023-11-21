@@ -57,7 +57,6 @@ export const DEFAULT_SERVICE_CONFIGURATION: ServiceConfiguration = {
 } as const;
 
 export function isService(service: any): service is Service {
-  log("Checking if service is a Service", service);
   return (
     typeof service.title === "string" &&
     typeof service.description === "string" &&

@@ -34,10 +34,21 @@ export function isHTTPError(error: unknown): error is HTTPError {
 
 export class BadRequestError extends HTTPError {
   type = Errors.BadRequest;
-  constructor(message?: string, fields: Record<string, string> = {}) {
-    super(400, message || "Bad Request", fields);
+  fields: Record<string, string>;
+  constructor(message?: string, fieldErrors?: Record<string, string>) {
+    super(400, message || "Bad Request");
+    this.fields = fieldErrors || {};
   }
 }
+
+export function isBadRequestError(error: HTTPError): error is BadRequestError {
+  return (
+    error.status === 400 &&
+    "fields" in error &&
+    typeof error.fields === "object"
+  );
+}
+
 export class UnauthorizedError extends HTTPError {
   type = Errors.Unauthorized;
   constructor(message?: string, errors?: Record<string, string>) {

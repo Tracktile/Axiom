@@ -20,6 +20,15 @@ interface APIRequestParams<T> {
   token?: string | null;
 }
 
+export function paramsForQuery<TParams extends Record<string, string | number>>(
+  url: string,
+  params: TParams = {} as TParams
+) {
+  return Object.fromEntries(
+    Object.entries(params).filter((key) => !url.includes(`:${key}`))
+  );
+}
+
 export function buildResourcePath<
   TParams extends Record<string, string | number>,
 >(baseUrl: string, resource: string, params: TParams = {} as TParams) {
@@ -30,25 +39,11 @@ export function buildResourcePath<
     ? resource.substr(1)
     : resource;
   const url = `${cleanBaseUrl}/${cleanResource}`;
-  const paramsForResource = Object.keys(params).filter((key) =>
-    url.includes(`:${key}`)
-  );
-  const paramsForQuery = Object.keys(params).filter(
-    (key) => !paramsForResource.includes(key)
-  );
-  const urlWithParams = Object.entries(paramsForResource).reduce(
-    (acc, [key, val]) => {
-      return acc.replace(`:${key}`, val.toString());
-    },
-    url
-  );
-  const urlWithQuery = Object.entries(paramsForQuery).reduce(
-    (acc, [key, val]) => {
-      return `${acc}${acc.includes("?") ? "&" : "?"}${key}=${val}`;
-    },
-    urlWithParams
-  );
-  return urlWithQuery;
+  const urlWithParams = Object.entries(params).reduce((acc, [key, val]) => {
+    return acc.replace(`:${key}`, val.toString());
+  }, url);
+  console.log({ url, urlWithParams });
+  return urlWithParams;
 }
 
 export async function request<TRequestBody, TResponseBody = TRequestBody>(
@@ -202,6 +197,8 @@ export function createUpdateRequestFn<T extends TSchema>({
   ...options
 }: RequestCreatorOptions) {
   return async function update(id: string | number, body: Static<T>) {
+    console.log("AXIOM createUpdateRequestFn", { id, body });
+
     const [resp] = await request<Static<T>>(`${resourcePath}/${id}`, {
       method: "put",
       body,

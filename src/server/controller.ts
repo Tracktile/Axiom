@@ -1,7 +1,7 @@
 import Router from "@koa/router";
 import { DefaultState, Middleware, Next } from "koa";
 
-import { T, TSchema } from "../common";
+import { T, TSchema, trueFalseStringsToBoolean } from "../common";
 import { Service } from "./service";
 import { OperationDefinition, OperationContext, Operation } from "./types";
 import { compose } from "./middleware";
@@ -16,6 +16,20 @@ interface ControllerOptions {
 
 type AnyObject = Record<string, unknown>;
 type AnyObjectOrArray = object | unknown[];
+
+type RouteHandler<
+  TParams extends TSchema,
+  TQuery extends TSchema,
+  TReq extends TSchema,
+  TRes extends TSchema,
+  TExtend,
+> = (
+  ctx: OperationContext<
+    OperationDefinition<TParams, TQuery, TReq, TRes>,
+    TExtend
+  >,
+  next: Next
+) => Promise<void>;
 
 function serializer(
   obj: object | null | unknown[]
@@ -153,11 +167,22 @@ export class Controller<TExtend = Record<string, unknown>> {
 
   bind(router: Router<DefaultState, unknown> = this.router) {
     this.operations.forEach(([operation, handler]) => {
+      const routeHandler = async (
+        ctx: OperationContext<
+          OperationDefinition<TSchema, TSchema, TSchema, TSchema>,
+          TExtend
+        >,
+        next: Next
+      ) =>
+        handler(
+          Object.assign(ctx, { query: trueFalseStringsToBoolean(ctx.query) }),
+          next
+        );
       this.register(
         operation,
         operation.path,
         [operation.method],
-        [...operation.middleware, handler]
+        [...operation.middleware, routeHandler]
       );
     });
     if (!["", "/"].includes(this.prefix)) {
@@ -176,13 +201,7 @@ export class Controller<TExtend = Record<string, unknown>> {
     TRes extends TSchema,
   >(
     definition: Operation<TParams, TQuery, TReq, TRes>,
-    ...handlers: ((
-      ctx: OperationContext<
-        OperationDefinition<TParams, TQuery, TReq, TRes>,
-        TExtend
-      >,
-      next: Next
-    ) => Promise<void>)[]
+    ...handlers: RouteHandler<TParams, TQuery, TReq, TRes, TExtend>[]
   ) {
     const operation = this.createOperation(definition);
     this.operations.push([

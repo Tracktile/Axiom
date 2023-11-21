@@ -6,7 +6,6 @@ import {
   Contact,
   License,
   Server,
-  isService,
 } from "./service";
 
 export interface CombinedServiceConfiguration extends ServiceConfiguration {
