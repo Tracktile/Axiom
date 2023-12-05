@@ -61,7 +61,6 @@ export class ReactProcedure<TProcedure extends Procedure<any, any>> {
         );
         const paramsForQ = paramsForQuery(url, params);
         const query = convertQueryParamKeysToKabobCase(paramsForQ);
-        console.log({ baseUrl: this.baseUrl, params, url, paramsForQ, query });
         const [resp] = await request<Static<TProcedure["result"]>>(url, {
           method: this.procedure.method,
           body: params,

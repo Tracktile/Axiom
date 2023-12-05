@@ -101,19 +101,6 @@ export class ReactModel<
       noAdditionalPropertiesInSchema(this.model.schemas.create)
     );
 
-    console.log("og schema", schema);
-    console.log("before prep: ", payload);
-
-    console.log("processedSchema", processedSchema);
-
-    // Cast payload to schema
-    // const casted = Value.Cast(
-    //   processedSchema,
-    //   Value.Convert(processedSchema, payload)
-    // );
-
-    // console.log("casted value", casted);
-
     // Map undefined to null
     // Remove empty string values from objects
     // Remove properties not in schema
@@ -122,8 +109,6 @@ export class ReactModel<
         noAdditionalProperties(this.model.schemas.create, payload)
       )
     );
-
-    console.log("pruned", pruned);
 
     return pruned;
   }

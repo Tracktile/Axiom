@@ -131,6 +131,7 @@ export class Service<TExtend = Record<string, unknown>> extends Koa<
       try {
         await next();
       } catch (err) {
+        console.log(err);
         if (err instanceof Error) {
           if (isHTTPError(err)) {
             ctx.body = {

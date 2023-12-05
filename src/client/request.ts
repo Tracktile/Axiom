@@ -42,7 +42,6 @@ export function buildResourcePath<
   const urlWithParams = Object.entries(params).reduce((acc, [key, val]) => {
     return acc.replace(`:${key}`, val.toString());
   }, url);
-  console.log({ url, urlWithParams });
   return urlWithParams;
 }
 
@@ -197,8 +196,6 @@ export function createUpdateRequestFn<T extends TSchema>({
   ...options
 }: RequestCreatorOptions) {
   return async function update(id: string | number, body: Static<T>) {
-    console.log("AXIOM createUpdateRequestFn", { id, body });
-
     const [resp] = await request<Static<T>>(`${resourcePath}/${id}`, {
       method: "put",
       body,

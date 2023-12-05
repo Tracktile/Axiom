@@ -66,10 +66,8 @@ export function validate<
     ) {
       const striped = noAdditionalProperties(context.req, ctx.request.body);
       ctx.request.body = striped;
-      console.log("validating body", striped);
       const schema = context.req;
       errors = [...errors, ...Value.Errors(schema, ctx.request.body)];
-      console.log("ERRORS", errors);
     }
 
     if (errors.length > 0) {
