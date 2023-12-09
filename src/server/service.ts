@@ -6,7 +6,7 @@ import KoaQs from "koa-qs";
 
 import { Controller } from "./controller";
 import { convertQueryParamKeysFromKabobCase } from "../common";
-import { isHTTPError } from "./errors";
+import { isBadRequestError, isHTTPError } from "./errors";
 
 import Debug from "debug";
 const log = Debug("axiom:server");
@@ -131,14 +131,14 @@ export class Service<TExtend = Record<string, unknown>> extends Koa<
       try {
         await next();
       } catch (err) {
-        console.log(err);
         if (err instanceof Error) {
           if (isHTTPError(err)) {
             ctx.body = {
               message: err.message,
-              errors: err.errors,
+              errors: isBadRequestError(err) ? err.fields : err.errors,
             };
             ctx.status = err.status;
+            console.log(ctx.body);
           } else {
             ctx.body = {
               message: err.message,
@@ -147,8 +147,6 @@ export class Service<TExtend = Record<string, unknown>> extends Koa<
           }
           log("error", err);
           this.onError(err);
-
-          return;
         }
       }
     });

@@ -6,7 +6,7 @@ export const SendEvent = createProcedure({
   params: T.Object({
     name: T.Union([T.Literal("user-created"), T.Literal("user-removed")]),
     userId: T.String({ format: "uuid" }),
-    time: T.Date({ format: "date-time" }),
+    time: T.String({ format: "date-time" }),
   }),
   result: T.Boolean(),
 });

@@ -42,11 +42,7 @@ export class BadRequestError extends HTTPError {
 }
 
 export function isBadRequestError(error: HTTPError): error is BadRequestError {
-  return (
-    error.status === 400 &&
-    "fields" in error &&
-    typeof error.fields === "object"
-  );
+  return error.type === Errors.BadRequest;
 }
 
 export class UnauthorizedError extends HTTPError {

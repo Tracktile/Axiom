@@ -35,7 +35,7 @@ export type OperationDefinition<
   name: string;
   method: "get" | "post" | "put" | "patch" | "delete";
   summary: string;
-  isPublic?: boolean;
+  internal?: boolean;
   description: string;
   path: string;
   params: TParams;

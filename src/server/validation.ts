@@ -25,7 +25,9 @@ const formats: Record<string, FormatValidator> = {
 Object.entries(formats).forEach(([name, validatorFn]) => {
   try {
     TypeSystem.Format(name, (value) => validatorFn(value));
-  } catch {}
+  } catch (err) {
+    console.log(err);
+  }
 });
 
 function parseValueErrors(errors: ValueError[]): Record<string, string> {

@@ -43,7 +43,7 @@ const kebab = (str: string) => {
 
 interface GenerateOptions {
   format: "json" | "yaml";
-  isPublic?: boolean;
+  internal?: boolean;
 }
 
 const DEFAULT_GENERATE_OPTIONS: GenerateOptions = {
@@ -54,7 +54,7 @@ export async function generate<TContext = Record<string, never>>(
   target: Service<TContext> | CombinedService<TContext>,
   {
     format = "yaml",
-    isPublic = true,
+    internal = false,
   }: GenerateOptions = DEFAULT_GENERATE_OPTIONS
 ) {
   log("Generating OpenAPI spec from service", target);
@@ -164,8 +164,6 @@ export async function generate<TContext = Record<string, never>>(
     OperationDefinition<TSchema, TSchema, TSchema, TSchema>[]
   > = {};
 
-  log("Iterating over services");
-
   const services = isCombinedService(target) ? target.children : [target];
 
   log(`Found ${services.length} services`);
@@ -185,7 +183,7 @@ export async function generate<TContext = Record<string, never>>(
           ["", "/"].includes(service.prefix) ? "" : service.prefix
         }${controller.prefix}${op.path}`;
 
-        if (!operationsByPath[path]) {
+        if (!Array.isArray(operationsByPath[path])) {
           operationsByPath[path] = [];
         }
 
@@ -203,9 +201,8 @@ export async function generate<TContext = Record<string, never>>(
     log(`Generating path parameters for path ${path}`);
     let pathObj: oa.oas30.PathItemObject = {};
     const operations = operationsByPath[path].filter((op) => {
-      log({ isPublic, opIsPublic: op.isPublic });
-
-      return op.isPublic || !isPublic;
+      log({ internal, opIsInternal: op.internal });
+      return !op.internal || !internal;
     });
     log(`Found ${operations.length} operations for path ${path}`);
 

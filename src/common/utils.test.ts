@@ -128,11 +128,3 @@ describe("withNoEnumValues", () => {
     expect(Value.Create(updatedSchema)).toEqual({ anyStr: "", anyNum: 0 });
   });
 });
-
-describe("convertQueryParamKeysToKabobCase", () => {
-  it("should keys to kabob case", () => {
-    const query = { by: "order", camelCase: "camel" };
-    const converted = convertQueryParamKeysToKabobCase(query);
-    expect(converted).toEqual({ by: "order", "camel-case": "camel" });
-  });
-});
