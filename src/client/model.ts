@@ -36,6 +36,7 @@ type AxiomQueryOptions = {
   orderBy?: string;
   fields?: SearchQuery["fields"];
   comparator?: "and" | "or";
+  path?: Record<string, string | number>;
 };
 
 type AxiomModelMutationOptions<
@@ -200,7 +201,6 @@ export class ReactModel<
           this.model.schemas.update,
           item as object
         );
-        console.log("AXIOM", { id, pruned });
         return createUpdateRequestFn<TModel["schemas"]["model"]>({
           resourcePath: buildResourcePath(this.baseUrl, this.model.resource),
           token: this.token,
@@ -324,11 +324,13 @@ export class ReactModel<
         Static<TModel["schemas"]["model"]>,
         Error,
         ReturnType<TTransform>
-      >
+      > & {
+        path?: Record<string, string | number>;
+      }
     >
   ) {
     return useQuery({
-      queryKey: this.modelKeys.get(id),
+      queryKey: [...this.modelKeys.get(id), options?.path],
       enabled: !!id,
       refetchInterval: false,
       refetchIntervalInBackground: false,
@@ -340,7 +342,11 @@ export class ReactModel<
       ...options,
       queryFn: () =>
         createGetRequestFn<TModel["schemas"]["model"]>({
-          resourcePath: buildResourcePath(this.baseUrl, this.model.resource),
+          resourcePath: buildResourcePath(
+            this.baseUrl,
+            this.model.resource,
+            options?.path
+          ),
           token: this.token,
         })(id),
       select: (data) => {
@@ -356,6 +362,7 @@ export class ReactModel<
       orderBy,
       fields = [],
       comparator = "or",
+      path,
     }: AxiomQueryOptions = {},
     options?: Partial<
       UseQueryOptions<
@@ -387,7 +394,11 @@ export class ReactModel<
         const { results, total } = await createSearchRequestFn<
           TModel["schemas"]["model"]
         >({
-          resourcePath: buildResourcePath(this.baseUrl, this.model.resource),
+          resourcePath: buildResourcePath(
+            this.baseUrl,
+            this.model.resource,
+            path
+          ),
           token: this.token,
           headers: {
             "X-Pagination-Fieldoperator": comparator,

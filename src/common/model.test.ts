@@ -10,6 +10,7 @@ describe("Model", () => {
       model: T.Object({
         id: T.String(),
       }),
+      transformer: (obj) => obj,
     });
     expect(model).toBeDefined();
     expect(model.schemas.create).toEqual(model.schemas.model);
@@ -44,6 +45,7 @@ describe("Model", () => {
       path: T.Object({
         id: T.String(),
       }),
+      transformer: (obj) => obj,
     });
     expect(model).toBeDefined();
     expect(model.schemas.create).not.toEqual(model.schemas.model);

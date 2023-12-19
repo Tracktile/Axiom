@@ -1,6 +1,6 @@
 {
   "name": "@tracktile/axiom",
-  "version": "1.0.66",
+  "version": "1.0.69",
   "description": "Dead simple, Opinionated, and Type Safe framework for building APIs with React Frontends.",
   "homepage": "https://github.com/Tracktile/Axiom",
   "license": "MIT",
@@ -50,7 +50,7 @@
   "dependencies": {
     "@koa/cors": "^4.0.0",
     "@koa/router": "^12.0.0",
-    "@openapi-contrib/json-schema-to-openapi-schema": "^2.2.5",
+    "@openapi-contrib/json-schema-to-openapi-schema": "^3.0.1",
     "@sinclair/typebox": "^0.31.15",
     "@tanstack/react-query": "^5.0.0-beta.20",
     "@vendia/serverless-express": "^4.10.4",

@@ -8,6 +8,7 @@ import * as oa from "openapi3-ts";
 import { OperationDefinition } from "../server/types";
 import { Service } from "../server/service";
 import { CombinedService, isCombinedService } from "../server/combined-service";
+import { withDatesAsDateTimeStrings } from "../common/utils";
 
 const log = debug("axiom:cli:generate");
 
@@ -15,6 +16,11 @@ export type Services<TContext = Record<string, never>> = {
   resource: string;
   service: Service<TContext>;
 }[];
+
+async function convertToOpenAPI<TSchema>(schema: TSchema) {
+  const converted = convert(schema as object);
+  return converted;
+}
 
 const formatPath = (path: string) => {
   const converted = path
@@ -61,6 +67,7 @@ export async function generate<TContext = Record<string, never>>(
   const spec = oa.oas30.OpenApiBuilder.create()
     .addTitle(target.title)
     .addDescription(target.description)
+    .addVersion(target.version)
     .addSecurityScheme("JWT", {
       bearerFormat: "JWT",
       type: "http",
@@ -251,7 +258,11 @@ export async function generate<TContext = Record<string, never>>(
             ? {
                 requestBody: {
                   content: {
-                    "application/json": { schema: await convert(op.req) },
+                    "application/json": {
+                      schema: await convertToOpenAPI(
+                        withDatesAsDateTimeStrings(op.req)
+                      ),
+                    },
                   },
                 },
               }
@@ -271,7 +282,9 @@ export async function generate<TContext = Record<string, never>>(
               description: op.res.description ?? "Success",
               content: {
                 "application/json": {
-                  schema: await convert(op.res),
+                  schema: await convertToOpenAPI(
+                    withDatesAsDateTimeStrings(op.res)
+                  ),
                 },
               },
             },

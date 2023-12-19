@@ -138,7 +138,6 @@ export class Service<TExtend = Record<string, unknown>> extends Koa<
               errors: isBadRequestError(err) ? err.fields : err.errors,
             };
             ctx.status = err.status;
-            console.log(ctx.body);
           } else {
             ctx.body = {
               message: err.message,

@@ -126,6 +126,31 @@ export function withNoEnumValues<T extends TSchema>(schema: T): T {
   return schema;
 }
 
+export function withDatesAsDateTimeStrings<T extends TSchema>(schema: T): T {
+  if (TypeGuard.TArray(schema)) {
+    return { ...schema, items: withDatesAsDateTimeStrings(schema.items) };
+  }
+  if (TypeGuard.TObject(schema)) {
+    return {
+      ...schema,
+      properties: Object.fromEntries(
+        Object.entries(schema.properties).map(([key, value]) => [
+          key,
+          withDatesAsDateTimeStrings(value),
+        ])
+      ),
+    };
+  }
+  if (TypeGuard.TDate(schema)) {
+    return {
+      ...schema,
+      type: "string",
+      format: "date-time",
+    };
+  }
+  return schema;
+}
+
 export function noEmptyStringValues<T extends object>(obj: T): Partial<T> {
   return Object.entries(obj).reduce((acc, [key, val]) => {
     if (val !== "") {
