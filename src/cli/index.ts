@@ -3,21 +3,27 @@
 import fs from "fs";
 import path from "path";
 import { parse } from "ts-command-line-args";
-import { debug } from "debug";
+import loadConfig from "load-config-file";
+import { Type as T, Static } from "@sinclair/typebox";
+import { Value } from "@sinclair/typebox/value";
 
-import { Service, isCombinedService, isService } from "../server";
 import { generate } from "./generate";
 
-const log = debug("axiom:cli");
+loadConfig.register("json", (text) => JSON.parse(text));
 
-interface ICopyFilesArguments {
-  input: string;
-  output: string;
-  internal?: boolean;
-  yaml?: boolean;
-  json?: boolean;
-  help?: boolean;
-}
+const AxiomCliConfig = T.Object({
+  entry: T.String({ default: "index.ts" }),
+  output: T.String({ default: "api.yaml" }),
+  internal: T.Boolean({ default: false }),
+  format: T.Union([T.Literal("json"), T.Literal("yaml")], { default: "yaml" }),
+});
+type AxiomCliConfig = Static<typeof AxiomCliConfig>;
+
+const AxiomCliArgs = T.Object({
+  config: T.Optional(T.String()),
+  help: T.Optional(T.Boolean()),
+});
+type AxiomCliArgs = Static<typeof AxiomCliArgs>;
 
 const fatal = (message: string) => {
   console.error(`[X] ${message}`);
@@ -28,37 +34,19 @@ const warn = (message: string) => {
   console.warn(`[!] ${message}`);
 };
 
+const info = (...args: any[]) => {
+  console.info("[*]", ...args);
+};
+
 const processArgs = () => {
   try {
-    const args = parse<ICopyFilesArguments>(
+    const args = parse<AxiomCliArgs>(
       {
-        input: {
+        config: {
           type: String,
-          alias: "i",
-          description:
-            "The service from which to generate schema. Your Service should be the files default export.",
-        },
-        output: {
-          type: String,
-          alias: "o",
-          description: "The output file to write schema to.",
-        },
-        internal: {
-          type: Boolean,
-          description: "Include internal routes in schema",
           optional: true,
-        },
-        yaml: {
-          type: Boolean,
-          alias: "y",
-          description: "Output schema as YAML",
-          optional: true,
-        },
-        json: {
-          type: Boolean,
-          alias: "j",
-          description: "Output schema as JSON",
-          optional: true,
+          description: "Path to an axiom.config.json file.",
+          defaultValue: "axiom.config.json",
         },
         help: {
           type: Boolean,
@@ -71,32 +59,13 @@ const processArgs = () => {
         helpArg: "help",
         headerContentSections: [
           {
-            header: "Veritas",
-            content: "Batteries included, but like.. watch batteries.",
+            header: "Axiom",
+            content:
+              "A batteries included Typescript API framework, but like.. watch batteries.",
           },
         ],
       }
     );
-    if (args.yaml && args.json) {
-      fatal("Both --yaml and --json were passed, choose one.");
-    }
-    if (!args.yaml && !args.json) {
-      warn(
-        "Neither --yaml or --json arguments provided, defauling output to YAML. "
-      );
-      args.yaml = true;
-    }
-
-    if (args.json && !args.output.endsWith(".json")) {
-      args.output = `${args.output}.json`;
-    }
-
-    if (args.yaml && !args.output.endsWith(".yaml")) {
-      args.output = `${args.output}.yaml`;
-    }
-
-    args.input = path.resolve(process.cwd(), args.input);
-    args.output = path.resolve(process.cwd(), args.output);
     return args;
   } catch (err) {
     if (err instanceof Error) {
@@ -114,28 +83,36 @@ const recurseDefaultExports = (imported: any): any => {
   return imported;
 };
 
-async function main() {
+async function loadEntry(entry: string) {
+  const imported = await import(entry);
+  const service = recurseDefaultExports(imported);
+  return service;
+}
+
+function getConfig(configPath?: string) {
   try {
-    const args = processArgs();
-    log(`Importing from ${args.input}`);
-
-    const imported = await import(args.input);
-    const service = recurseDefaultExports(imported);
-
-    const content = await generate(service, {
-      format: args.json ? "json" : "yaml",
-      internal: args.internal,
-    });
-
-    fs.writeFileSync(args.output, content, { encoding: "utf8" });
-    process.exit(0);
+    const loaded = loadConfig.loadSync(configPath ?? "axiom.config");
+    const config = Value.Cast(AxiomCliConfig, loaded);
+    const resolvedPath = path.resolve(loaded.$cfgPath as string);
+    info("Using config:", resolvedPath);
+    return config;
   } catch (err) {
-    if (err instanceof Error) {
-      console.error(err);
-      fatal(err.message);
-    }
-    fatal("Something has gone terribly wrong.");
+    return fatal(
+      `Unable to resolve configuration: ${configPath ?? "axiom.config"}`
+    );
   }
+}
+
+async function main() {
+  const args = processArgs();
+  const config = getConfig(args.config);
+  const service = await loadEntry(config.entry);
+  const content = await generate(service, {
+    format: config.format,
+    internal: config.internal,
+  });
+  fs.writeFileSync(path.resolve(config.output), content, { encoding: "utf8" });
+  info("Specification written to:", path.resolve(config.output));
 }
 
 main();

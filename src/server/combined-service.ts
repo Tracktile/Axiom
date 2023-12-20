@@ -12,6 +12,7 @@ export interface CombinedServiceConfiguration extends ServiceConfiguration {
   title?: string;
   description?: string;
   tags?: string[];
+  logo?: string;
   version?: string;
   contact?: Contact;
   license?: License;
@@ -21,6 +22,7 @@ export interface CombinedServiceConfiguration extends ServiceConfiguration {
 export interface CombinedServiceOptions<TExtend = Record<string, never>>
   extends ServiceOptions<TExtend> {
   children: Service<TExtend>[];
+  logo?: string;
 }
 
 export const DEFAULT_COMBINED_SERVICE_CONFIGURATION = {
@@ -53,9 +55,11 @@ export class CombinedService<
   TExtend = Record<string, never>,
 > extends Service<TExtend> {
   children: Service<TExtend>[];
+  logo?: string;
 
-  constructor({ children, ...options }: CombinedServiceOptions<TExtend>) {
+  constructor({ children, logo, ...options }: CombinedServiceOptions<TExtend>) {
     super(options);
+    this.logo = logo;
     this.children = children;
   }
 }
@@ -80,6 +84,7 @@ export function combineServices<TExtend = Record<string, never>>(
     servers: combinedConfig.servers,
     title: combinedConfig.title,
     description: combinedConfig.description,
+    logo: combinedConfig.logo,
     tags: combinedConfig.tags,
     children: services,
     license: combinedConfig.license,

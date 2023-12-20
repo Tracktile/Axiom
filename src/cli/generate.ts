@@ -11,6 +11,10 @@ import { CombinedService, isCombinedService } from "../server/combined-service";
 import { withDatesAsDateTimeStrings } from "../common/utils";
 import { Controller } from "server";
 
+// TODO: you were thinking about having the CLI support an axiom.config.ts?
+
+// TODO: you were thinking about how to tag Services, Controllers, and Operations to support nested sidebar resources
+
 const log = debug("axiom:cli:generate");
 
 export type Services<TContext = Record<string, never>> = {
@@ -157,6 +161,14 @@ export async function generate<TContext = Record<string, never>>(
 
   if (isCombinedService(target)) {
     log("Input is a combined service - adding tags for each service");
+
+    if (target.logo) {
+      spec.rootDoc.info["x-logo"] = {
+        url: target.logo,
+        altText: target.title,
+      };
+    }
+
     target.children
       .filter((service) => !service.internal || internal)
       .forEach((service) => {
@@ -174,6 +186,7 @@ export async function generate<TContext = Record<string, never>>(
     (OperationDefinition<TSchema, TSchema, TSchema, TSchema> & {
       controller: Controller<TContext>;
       service: Service<TContext>;
+      group?: string;
     })[]
   > = {};
 

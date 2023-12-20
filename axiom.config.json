@@ -1,0 +1,6 @@
+{
+  "entry": "/Users/jarred/Code/tracktile/backend/src/local-services.ts",
+  "output": "./tracktile-api.yml",
+  "format": "yaml",
+  "internal": false
+}
