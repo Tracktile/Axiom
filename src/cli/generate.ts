@@ -171,6 +171,7 @@ export async function generate<TContext = Record<string, never>>(
     string,
     (OperationDefinition<TSchema, TSchema, TSchema, TSchema> & {
       controller: Controller<TContext>;
+      service: Service<TContext>;
     })[]
   > = {};
 
@@ -178,33 +179,40 @@ export async function generate<TContext = Record<string, never>>(
 
   log(`Found ${services.length} services`);
 
-  services.forEach((service) => {
-    log(`Adding controllers for service ${service.title}`);
-    service.controllers.forEach((controller) => {
-      const ops = controller.getOperations();
-      log(`Found ${ops.length} operations for controller`);
-      ops.forEach(([op]) => {
-        log(
-          `Operation: ${op.method.toUpperCase()} ${controller.prefix}${
-            op.path
-          }: ${op.name}`
-        );
-        const path = `${
-          ["", "/"].includes(service.prefix) ? "" : service.prefix
-        }${controller.prefix}${op.path}`;
+  services
+    .filter((service) => !service.internal || internal)
+    .forEach((service) => {
+      log(`Adding controllers for service ${service.title}`);
+      service.controllers
+        .filter((controller) => !controller.internal || internal)
+        .forEach((controller) => {
+          const ops = controller.getOperations();
+          log(`Found ${ops.length} operations for controller`);
+          ops.forEach(([op]) => {
+            log(
+              `Operation: ${op.method.toUpperCase()} ${controller.prefix}${
+                op.path
+              }: ${op.name}`
+            );
+            const path = `${
+              ["", "/"].includes(service.prefix) ? "" : service.prefix
+            }${controller.prefix}${op.path}`;
 
-        if (!Array.isArray(operationsByPath[path])) {
-          operationsByPath[path] = [];
-        }
+            if (!Array.isArray(operationsByPath[path])) {
+              operationsByPath[path] = [];
+            }
 
-        operationsByPath[path].push({
-          ...op,
-          tags: [...new Set([...service.tags, ...controller.tags, ...op.tags])],
-          controller,
+            operationsByPath[path].push({
+              ...op,
+              tags: [
+                ...new Set([...service.tags, ...controller.tags, ...op.tags]),
+              ],
+              controller,
+              service,
+            });
+          });
         });
-      });
     });
-  });
 
   log("Iterating over operations by path to generate path parameters");
 

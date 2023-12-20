@@ -33,6 +33,7 @@ export interface ServiceOptions<TExtend = Record<string, never>> {
   tags?: string[];
   prefix?: string;
   version?: string;
+  internal?: boolean;
   license?: License;
   contact?: Contact;
   servers?: Server[];
@@ -73,6 +74,7 @@ export class Service<TExtend = Record<string, unknown>> extends Koa<
   description: string;
   tags: string[];
   prefix: string;
+  internal: boolean;
   contact: Contact;
   license: License;
   servers: Server[];
@@ -91,6 +93,7 @@ export class Service<TExtend = Record<string, unknown>> extends Koa<
     servers = [{ description: "", url: "" }],
     contact = { name: "", email: "", url: "" },
     license = { name: "", url: "" },
+    internal = false,
     tags = [],
     controllers = [],
     middlewares = [],
@@ -104,6 +107,7 @@ export class Service<TExtend = Record<string, unknown>> extends Koa<
     this.title = title;
     this.description = description;
     this.tags = tags;
+    this.internal = internal;
     this.contact = contact;
     this.license = license;
     this.servers = servers;

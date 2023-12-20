@@ -1,6 +1,6 @@
 {
   "name": "@tracktile/axiom",
-  "version": "1.0.72",
+  "version": "1.0.74",
   "description": "Dead simple, Opinionated, and Type Safe framework for building APIs with React Frontends.",
   "homepage": "https://github.com/Tracktile/Axiom",
   "license": "MIT",
