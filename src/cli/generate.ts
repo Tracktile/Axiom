@@ -208,8 +208,7 @@ export async function generate<TContext = Record<string, never>>(
     log(`Generating path parameters for path ${path}`);
     let pathObj: oa.oas30.PathItemObject = {};
     const operations = operationsByPath[path].filter((op) => {
-      log({ internal, opIsInternal: op.internal });
-      return !op.internal || !internal;
+      return !op.internal || internal;
     });
     log(`Found ${operations.length} operations for path ${path}`);
 

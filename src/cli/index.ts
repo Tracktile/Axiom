@@ -13,6 +13,7 @@ const log = debug("axiom:cli");
 interface ICopyFilesArguments {
   input: string;
   output: string;
+  internal?: boolean;
   yaml?: boolean;
   json?: boolean;
   help?: boolean;
@@ -41,6 +42,12 @@ const processArgs = () => {
           type: String,
           alias: "o",
           description: "The output file to write schema to.",
+        },
+        internal: {
+          type: Boolean,
+          alias: "i",
+          description: "Include internal routes in schema",
+          optional: true,
         },
         yaml: {
           type: Boolean,
@@ -118,6 +125,7 @@ async function main() {
 
     const content = await generate(service, {
       format: args.json ? "json" : "yaml",
+      internal: args.internal,
     });
 
     fs.writeFileSync(args.output, content, { encoding: "utf8" });
