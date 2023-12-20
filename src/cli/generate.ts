@@ -9,6 +9,7 @@ import { OperationDefinition } from "../server/types";
 import { Service } from "../server/service";
 import { CombinedService, isCombinedService } from "../server/combined-service";
 import { withDatesAsDateTimeStrings } from "../common/utils";
+import { Controller } from "server";
 
 const log = debug("axiom:cli:generate");
 
@@ -168,7 +169,9 @@ export async function generate<TContext = Record<string, never>>(
 
   const operationsByPath: Record<
     string,
-    OperationDefinition<TSchema, TSchema, TSchema, TSchema>[]
+    (OperationDefinition<TSchema, TSchema, TSchema, TSchema> & {
+      controller: Controller<TContext>;
+    })[]
   > = {};
 
   const services = isCombinedService(target) ? target.children : [target];
@@ -197,6 +200,7 @@ export async function generate<TContext = Record<string, never>>(
         operationsByPath[path].push({
           ...op,
           tags: [...new Set([...service.tags, ...controller.tags, ...op.tags])],
+          controller,
         });
       });
     });
@@ -208,7 +212,7 @@ export async function generate<TContext = Record<string, never>>(
     log(`Generating path parameters for path ${path}`);
     let pathObj: oa.oas30.PathItemObject = {};
     const operations = operationsByPath[path].filter((op) => {
-      return !op.internal || internal;
+      return (!op.internal && !op.controller.internal) || internal;
     });
     log(`Found ${operations.length} operations for path ${path}`);
 

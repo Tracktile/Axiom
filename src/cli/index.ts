@@ -45,7 +45,6 @@ const processArgs = () => {
         },
         internal: {
           type: Boolean,
-          alias: "i",
           description: "Include internal routes in schema",
           optional: true,
         },

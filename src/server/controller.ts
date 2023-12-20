@@ -11,6 +11,7 @@ interface ControllerOptions {
   prefix?: string;
   tags?: string[];
   auth?: boolean;
+  internal?: boolean;
   middleware?: Middleware<DefaultState, OperationContext>[];
 }
 
@@ -63,6 +64,7 @@ export class Controller<TExtend = Record<string, unknown>> {
   prefix: string;
   tags: string[];
   auth: boolean;
+  internal: boolean;
   preMatchedRouteMiddleware: Middleware<DefaultState, OperationContext>[];
   router: Router<DefaultState, unknown>;
   operations: [
@@ -81,11 +83,13 @@ export class Controller<TExtend = Record<string, unknown>> {
     middleware = [],
     tags = [],
     auth = false,
+    internal = false,
   }: ControllerOptions = {}) {
     this.router = new Router<DefaultState, unknown>();
     this.preMatchedRouteMiddleware = middleware;
     this.tags = tags;
     this.auth = auth;
+    this.internal = internal;
     this.prefix = prefix;
     this.operations = [];
   }
