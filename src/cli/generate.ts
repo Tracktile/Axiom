@@ -157,14 +157,16 @@ export async function generate<TContext = Record<string, never>>(
 
   if (isCombinedService(target)) {
     log("Input is a combined service - adding tags for each service");
-    target.children.forEach((service) => {
-      log(`Adding for service ${service.title}`);
-      spec.addTag({
-        name: service.title,
-        description: service.description,
+    target.children
+      .filter((service) => !service.internal || internal)
+      .forEach((service) => {
+        log(`Adding for service ${service.title}`);
+        spec.addTag({
+          name: service.title,
+          description: service.description,
+        });
+        service.tags = [service.title];
       });
-      service.tags = [service.title];
-    });
   }
 
   const operationsByPath: Record<
