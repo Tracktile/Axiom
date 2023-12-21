@@ -16,6 +16,14 @@ const AxiomCliConfig = T.Object({
   output: T.String({ default: "api.yaml" }),
   internal: T.Boolean({ default: false }),
   format: T.Union([T.Literal("json"), T.Literal("yaml")], { default: "yaml" }),
+  sections: T.Optional(
+    T.Array(
+      T.Object({
+        title: T.String(),
+        tags: T.Array(T.String()),
+      })
+    )
+  ),
 });
 type AxiomCliConfig = Static<typeof AxiomCliConfig>;
 
@@ -92,8 +100,13 @@ async function loadEntry(entry: string) {
 function getConfig(configPath?: string) {
   try {
     const loaded = loadConfig.loadSync(configPath ?? "axiom.config");
-    const config = Value.Cast(AxiomCliConfig, loaded);
     const resolvedPath = path.resolve(loaded.$cfgPath as string);
+    const config = Value.Cast(AxiomCliConfig, loaded);
+
+    // Rewrite entry and output to absolute paths based on the config file.
+    config.entry = path.resolve(path.dirname(resolvedPath), config.entry);
+    config.output = path.resolve(path.dirname(resolvedPath), config.output);
+
     info("Using config:", resolvedPath);
     return config;
   } catch (err) {
@@ -107,10 +120,7 @@ async function main() {
   const args = processArgs();
   const config = getConfig(args.config);
   const service = await loadEntry(config.entry);
-  const content = await generate(service, {
-    format: config.format,
-    internal: config.internal,
-  });
+  const content = await generate(service, config);
   fs.writeFileSync(path.resolve(config.output), content, { encoding: "utf8" });
   info("Specification written to:", path.resolve(config.output));
 }

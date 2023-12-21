@@ -11,10 +11,6 @@ import { CombinedService, isCombinedService } from "../server/combined-service";
 import { withDatesAsDateTimeStrings } from "../common/utils";
 import { Controller } from "server";
 
-// TODO: you were thinking about having the CLI support an axiom.config.ts?
-
-// TODO: you were thinking about how to tag Services, Controllers, and Operations to support nested sidebar resources
-
 const log = debug("axiom:cli:generate");
 
 export type Services<TContext = Record<string, never>> = {
@@ -55,6 +51,7 @@ const kebab = (str: string) => {
 interface GenerateOptions {
   format: "json" | "yaml";
   internal?: boolean;
+  sections?: { title: string; tags: string[] }[];
 }
 
 const DEFAULT_GENERATE_OPTIONS: GenerateOptions = {
@@ -66,6 +63,7 @@ export async function generate<TContext = Record<string, never>>(
   {
     format = "yaml",
     internal = false,
+    sections = [],
   }: GenerateOptions = DEFAULT_GENERATE_OPTIONS
 ) {
   log("Generating OpenAPI spec from service", target);
@@ -179,6 +177,14 @@ export async function generate<TContext = Record<string, never>>(
         });
         service.tags = [service.title];
       });
+  }
+
+  if (sections.length > 0) {
+    log("Adding x-tagGroups for each section");
+    spec.rootDoc["x-tagGroups"] = sections.map((section) => ({
+      name: section.title,
+      tags: section.tags,
+    }));
   }
 
   const operationsByPath: Record<

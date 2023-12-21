@@ -65,7 +65,7 @@ export class CombinedService<
 }
 
 /**
- * Utility method for creating a single Veritas Service out of many independent services.
+ * Utility method for creating a single Axiom Service out of many independent services.
  * Useful when spinning up many microservices as a monolithic gateway bound to a single port.
  *
  * This method skips the regular bind phase of each service and instead creates an independent
