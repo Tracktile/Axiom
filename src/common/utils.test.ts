@@ -1,4 +1,3 @@
-import { T, Value } from "../common";
 import {
   undefinedToNull,
   noEmptyStringValues,
@@ -7,8 +6,8 @@ import {
   shallowSchemaProperties,
   withNoStringFormats,
   withNoEnumValues,
-  convertQueryParamKeysToKabobCase,
 } from "./utils";
+import { T, Value } from "../common";
 
 describe("noEmptyStringValues()", () => {
   it("should remove keys from an object if their value is an empty string", () => {

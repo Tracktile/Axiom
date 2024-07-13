@@ -6,15 +6,22 @@ import React, {
   useContext,
 } from "react";
 
-import { TSchema, Model, Procedure } from "../common";
 import { createApi, ReactModelMap, ReactProcedureMap } from "./api";
+import { TSchema, Model, Procedure } from "../common";
+
+const emptyModelMap: Record<
+  string,
+  Model<any, any, any, any, any, any, any>
+> = {};
+
+const emptyProcedureMap: Record<string, Procedure<any, any, any>> = {};
 
 type ApiContextData<
   M extends Record<
     string,
     Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema, any>
   >,
-  P extends Record<string, Procedure<TSchema, TSchema>>,
+  P extends Record<string, Procedure<TSchema, TSchema, TSchema>>,
 > = {
   api: ReactModelMap<M> & ReactProcedureMap<P>;
 };
@@ -24,7 +31,7 @@ const ApiContext = createContext<ApiContextData<
     string,
     Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema, any>
   >,
-  Record<string, Procedure<TSchema, TSchema>>
+  Record<string, Procedure<TSchema, TSchema, TSchema>>
 > | null>(null);
 
 type ApiProviderProps<
@@ -32,7 +39,7 @@ type ApiProviderProps<
     string,
     Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema, any>
   >,
-  P extends Record<string, Procedure<TSchema, TSchema>>,
+  P extends Record<string, Procedure<TSchema, TSchema, TSchema>>,
 > = {
   models?: M;
   fns?: P;
@@ -46,7 +53,7 @@ function ApiProvider<
     string,
     Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema, any>
   >,
-  P extends Record<string, Procedure<TSchema, TSchema>>,
+  P extends Record<string, Procedure<TSchema, TSchema, TSchema>>,
 >({
   client = new QueryClient(),
   baseUrl,
@@ -74,7 +81,7 @@ function ApiProvider<
 
 export function createApiProvider<
   M extends Record<string, Model<any, any, any, any, any, any, any>>,
-  P extends Record<string, Procedure<any, any>>,
+  P extends Record<string, Procedure<any, any, any>>,
 >({ models = {} as M, fns = {} as P }: { models?: M; fns?: P }) {
   return function ApiProviderHook(
     props: PropsWithChildren<ApiProviderProps<M, P>>
@@ -87,8 +94,11 @@ function useApi<
   M extends Record<
     string,
     Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema, any>
-  > = {},
-  P extends Record<string, Procedure<TSchema, TSchema>> = {},
+  > = typeof emptyModelMap,
+  P extends Record<
+    string,
+    Procedure<TSchema, TSchema, TSchema>
+  > = typeof emptyProcedureMap,
 >() {
   const context = useContext<ApiContextData<M, P> | null>(
     ApiContext as unknown as React.Context<ApiContextData<M, P> | null>
@@ -102,7 +112,8 @@ function useApi<
 
 export function createUseApiHook<
   M extends Record<string, Model<any, any, any, any, any, any, any>>,
-  P extends Record<string, Procedure<any, any>>,
+  P extends Record<string, Procedure<any, any, any>>,
+  // eslint-disable-next-line no-empty-pattern
 >({}: { models?: M; fns?: P }) {
   return function useApiHook() {
     return useApi<M, P>();

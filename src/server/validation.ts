@@ -1,16 +1,15 @@
-import { validate as isUUID } from "uuid";
 import { TSchema, TypeGuard } from "@sinclair/typebox";
 import { ValueError } from "@sinclair/typebox/compiler";
 import { Value } from "@sinclair/typebox/value";
 import { DefaultState, Middleware, Next } from "koa";
 
+import { OperationDefinition, OperationContext } from "./types";
 import {
+  BadRequestError,
   TypeSystem,
   noAdditionalProperties,
-  trueFalseStringsToBoolean,
+  // trueFalseStringsToBoolean,
 } from "../common";
-import { BadRequestError } from "./errors";
-import { OperationDefinition, OperationContext } from "./types";
 
 type FormatValidator = (value: string) => boolean;
 
@@ -51,19 +50,21 @@ export function validate<
 ): Middleware<DefaultState, OperationContext<RouteContext, TExtend>> {
   return async (ctx: OperationContext<RouteContext, TExtend>, next: Next) => {
     let errors: ValueError[] = [];
-    if (context.query) {
-      errors = [
-        ...errors,
-        ...Value.Errors(context.query, trueFalseStringsToBoolean(ctx.query)),
-      ];
-    }
+    // if (context.query) {
+    //   const striped = noAdditionalProperties(context.query, ctx.query);
+    //   ctx.query = striped;
+    //   errors = [
+    //     ...errors,
+    //     ...Value.Errors(context.query, trueFalseStringsToBoolean(striped)),
+    //   ];
+    // }
     if (context.params) {
       errors = [...errors, ...Value.Errors(context.params, ctx.params)];
     }
 
     if (
       context.req &&
-      !TypeGuard.TUnknown(context.req) &&
+      !TypeGuard.IsUnknown(context.req) &&
       typeof ctx.request.body !== "undefined"
     ) {
       const striped = noAdditionalProperties(context.req, ctx.request.body);
@@ -80,7 +81,7 @@ export function validate<
 
     if (
       context.res &&
-      !TypeGuard.TUnknown(context.res) &&
+      !TypeGuard.IsUnknown(context.res) &&
       ctx.status < 300 &&
       typeof ctx.body !== "undefined"
     ) {

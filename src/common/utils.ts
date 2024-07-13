@@ -1,5 +1,6 @@
 import { Type, Static, TSchema, TypeGuard, TObject } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
+
 import { GetFieldType } from "./types";
 
 export function convertQueryParamKeysToKabobCase<T extends object>(obj: T) {
@@ -10,7 +11,7 @@ export function convertQueryParamKeysToKabobCase<T extends object>(obj: T) {
 
 export function convertQueryParamKeysFromKabobCase<T extends object>(obj: T) {
   return Object.fromEntries(
-    Object.entries(obj).map(([key, val]) => [key.replace(/\,/g, "-"), val])
+    Object.entries(obj).map(([key, val]) => [key.replace(/,/g, "-"), val])
   );
 }
 
@@ -41,10 +42,10 @@ export function Nullable<T extends TSchema>(schema: T) {
 export function noAdditionalPropertiesInSchema<T extends TSchema>(
   schema: T
 ): T {
-  if (TypeGuard.TArray(schema)) {
+  if (TypeGuard.IsArray(schema)) {
     return { ...schema, items: noAdditionalPropertiesInSchema(schema.items) };
   }
-  if (TypeGuard.TObject(schema)) {
+  if (TypeGuard.IsObject(schema)) {
     return {
       ...schema,
       additionalProperties: false,
@@ -60,10 +61,10 @@ export function noAdditionalPropertiesInSchema<T extends TSchema>(
 }
 
 export function withDefaultsForStringFormats<T extends TSchema>(schema: T): T {
-  if (TypeGuard.TArray(schema)) {
+  if (TypeGuard.IsArray(schema)) {
     return { ...schema, items: withDefaultsForStringFormats(schema.items) };
   }
-  if (TypeGuard.TObject(schema)) {
+  if (TypeGuard.IsObject(schema)) {
     return {
       ...schema,
       properties: Object.fromEntries(
@@ -74,7 +75,7 @@ export function withDefaultsForStringFormats<T extends TSchema>(schema: T): T {
       ),
     };
   }
-  if (TypeGuard.TString(schema) && typeof schema.format !== "undefined") {
+  if (TypeGuard.IsString(schema) && typeof schema.format !== "undefined") {
     return {
       ...schema,
       default: "",
@@ -84,10 +85,10 @@ export function withDefaultsForStringFormats<T extends TSchema>(schema: T): T {
 }
 
 export function withNoStringFormats<T extends TSchema>(schema: T): T {
-  if (TypeGuard.TArray(schema)) {
+  if (TypeGuard.IsArray(schema)) {
     return { ...schema, items: withNoStringFormats(schema.items) };
   }
-  if (TypeGuard.TObject(schema)) {
+  if (TypeGuard.IsObject(schema)) {
     return {
       ...schema,
       properties: Object.fromEntries(
@@ -98,7 +99,7 @@ export function withNoStringFormats<T extends TSchema>(schema: T): T {
       ),
     };
   }
-  if (TypeGuard.TString(schema) && typeof schema.format !== "undefined") {
+  if (TypeGuard.IsString(schema) && typeof schema.format !== "undefined") {
     return {
       ...schema,
       format: undefined,
@@ -108,16 +109,16 @@ export function withNoStringFormats<T extends TSchema>(schema: T): T {
 }
 
 export function withNoEnumValues<T extends TSchema>(schema: T): T {
-  if (TypeGuard.TArray(schema)) {
+  if (TypeGuard.IsArray(schema)) {
     return { ...schema, items: withNoEnumValues(schema.items) };
   }
-  if (TypeGuard.TObject(schema)) {
+  if (TypeGuard.IsObject(schema)) {
     return {
       ...schema,
       properties: Object.fromEntries(
         Object.entries(schema.properties)
           .filter(([, value]) => {
-            return !TypeGuard.TUnion(value);
+            return !TypeGuard.IsUnion(value);
           })
           .map(([key, value]) => [key, withNoEnumValues(value)])
       ),
@@ -127,10 +128,10 @@ export function withNoEnumValues<T extends TSchema>(schema: T): T {
 }
 
 export function withDatesAsDateTimeStrings<T extends TSchema>(schema: T): T {
-  if (TypeGuard.TArray(schema)) {
+  if (TypeGuard.IsArray(schema)) {
     return { ...schema, items: withDatesAsDateTimeStrings(schema.items) };
   }
-  if (TypeGuard.TObject(schema)) {
+  if (TypeGuard.IsObject(schema)) {
     return {
       ...schema,
       properties: Object.fromEntries(
@@ -141,7 +142,7 @@ export function withDatesAsDateTimeStrings<T extends TSchema>(schema: T): T {
       ),
     };
   }
-  if (TypeGuard.TDate(schema)) {
+  if (TypeGuard.IsDate(schema)) {
     return {
       ...schema,
       type: "string",
@@ -161,13 +162,13 @@ export function noEmptyStringValues<T extends object>(obj: T): Partial<T> {
 }
 
 export function noAdditionalProperties<T, I>(schema: T, input: I): I {
-  if (TypeGuard.TArray(schema) && Array.isArray(input)) {
+  if (TypeGuard.IsArray(schema) && Array.isArray(input)) {
     return input.map(
       (item) => noAdditionalProperties(schema.items, item) as unknown as T
     ) as I;
   }
   if (
-    TypeGuard.TObject(schema) &&
+    TypeGuard.IsObject(schema) &&
     typeof input === "object" &&
     input !== null
   ) {
@@ -190,7 +191,7 @@ export function shallowSchemaProperties<T extends TObject>(schema: T) {
     ...schema,
     properties: Object.fromEntries(
       Object.entries(schema.properties).filter(
-        ([, prop]) => !TypeGuard.TArray(prop) && !TypeGuard.TObject(prop)
+        ([, prop]) => !TypeGuard.IsArray(prop) && !TypeGuard.IsObject(prop)
       )
     ),
   };

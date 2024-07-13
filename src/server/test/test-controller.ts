@@ -1,7 +1,7 @@
 import request from "supertest";
 
-import { Service } from "../service";
 import { Controller } from "../controller";
+import { Service } from "../service";
 
 export function testController(controller: Controller) {
   const app = new Service({

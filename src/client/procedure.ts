@@ -1,19 +1,20 @@
-import { MutableRefObject, createRef } from "react";
 import {
   QueryClient,
   UseMutationOptions,
   useMutation,
 } from "@tanstack/react-query";
-
-import { Static, TSchema, convertQueryParamKeysToKabobCase } from "../common";
-import { buildResourcePath, paramsForQuery, request } from "./request";
 import { Procedure } from "common/procedure";
+import { MutableRefObject, createRef } from "react";
+
+import { buildResourcePath, paramsForQuery, request } from "./request";
+import { Static, TSchema, convertQueryParamKeysToKabobCase } from "../common";
 
 export interface ReactProcedureOptions<
   TParams extends TSchema,
+  TQuery extends TSchema,
   TResult extends TSchema,
 > {
-  procedure: Procedure<TParams, TResult>;
+  procedure: Procedure<TParams, TQuery, TResult>;
 }
 
 interface ProcedureBindOptions {
@@ -22,14 +23,22 @@ interface ProcedureBindOptions {
   token: MutableRefObject<string | null>;
 }
 
-export class ReactProcedure<TProcedure extends Procedure<any, any>> {
+export class ReactProcedure<TProcedure extends Procedure<any, any, any>> {
   baseUrl: string = "";
   token: MutableRefObject<string | null>;
   client?: QueryClient;
-  procedure: Procedure<TProcedure["params"], TProcedure["result"]>;
+  procedure: Procedure<
+    TProcedure["params"],
+    TProcedure["query"],
+    TProcedure["result"]
+  >;
 
   constructor(
-    options: ReactProcedureOptions<TProcedure["params"], TProcedure["result"]>
+    options: ReactProcedureOptions<
+      TProcedure["params"],
+      TProcedure["query"],
+      TProcedure["result"]
+    >
   ) {
     this.procedure = options.procedure;
     this.token = createRef<string | null>();
@@ -49,23 +58,26 @@ export class ReactProcedure<TProcedure extends Procedure<any, any>> {
       Static<TProcedure["params"]>
     > = {}
   ) {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const mutation = useMutation({
       mutationKey: [this.procedure.name],
       mutationFn: async (
-        params: Static<TProcedure["params"]>
+        params: Static<TProcedure["params"]> & Static<TProcedure["query"]>
       ): Promise<Static<TProcedure["result"]>> => {
         const url = buildResourcePath(
           this.baseUrl,
           this.procedure.resource,
           params
         );
-        const paramsForQ = paramsForQuery(url, params);
-        const query = convertQueryParamKeysToKabobCase(paramsForQ);
+        const paramsForQueryString = paramsForQuery(
+          this.procedure.resource,
+          params
+        );
         const [resp] = await request<Static<TProcedure["result"]>>(url, {
           method: this.procedure.method,
           body: params,
           token: this.token.current,
-          query,
+          query: convertQueryParamKeysToKabobCase(paramsForQueryString),
         });
         return resp;
       },

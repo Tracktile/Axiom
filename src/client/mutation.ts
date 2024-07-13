@@ -4,6 +4,7 @@ import {
   QueryKey,
   useMutation,
 } from "@tanstack/react-query";
+
 import { Static, TSchema } from "../common";
 
 type TContext<TData = undefined> = { previous?: TData };
@@ -63,7 +64,7 @@ export function createCreateMutation<T extends TSchema>(
       });
     },
     onError: (_err: Error, item: Static<T>, context?: TContext<Static<T>>) => {
-      if (!!context?.previous) {
+      if (context?.previous) {
         client.setQueryData(itemCacheKey(item[idKey]), context.previous);
         client.setQueryData<Static<T>[]>(itemIndexCacheKey(), (oldData = []) =>
           context.previous
@@ -130,7 +131,7 @@ export function createUpdateMutation<T extends TSchema>(
       client.invalidateQueries({ queryKey: itemIndexCacheKey() });
     },
     onError: (_err: Error, item: Static<T>, context?: TContext<Static<T>>) => {
-      if (!!context?.previous) {
+      if (context?.previous) {
         client.setQueryData(itemCacheKey(item[idKey]), context.previous);
         client.setQueryData<Static<T>[]>(itemIndexCacheKey(), (oldData = []) =>
           context.previous

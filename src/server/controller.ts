@@ -1,11 +1,11 @@
 import Router from "@koa/router";
 import { DefaultState, Middleware, Next } from "koa";
 
-import { T, TSchema, trueFalseStringsToBoolean } from "../common";
+import { compose } from "./middleware";
 import { Service } from "./service";
 import { OperationDefinition, OperationContext, Operation } from "./types";
-import { compose } from "./middleware";
 import { validate } from "./validation";
+import { T, TSchema, trueFalseStringsToBoolean } from "../common";
 
 interface ControllerOptions {
   prefix?: string;
@@ -41,7 +41,7 @@ function serializer(
   }
 
   if (obj instanceof Date) {
-    return obj;
+    return obj.toISOString();
   }
 
   if (typeof obj !== "object" || obj === undefined) {
@@ -49,7 +49,7 @@ function serializer(
   }
 
   if (Array.isArray(obj)) {
-    return (obj as Array<unknown>).map((item) =>
+    return (obj as unknown[]).map((item) =>
       serializer(item as AnyObjectOrArray)
     );
   }

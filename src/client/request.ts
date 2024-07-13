@@ -1,9 +1,21 @@
+import debug from "debug";
 import { stringify } from "qs";
 import { MutableRefObject } from "react";
-import debug from "debug";
 
-import { Static, TSchema, convertQueryParamKeysToKabobCase } from "../common";
 import { PaginationParams } from "./model";
+import {
+  isBadRequestError,
+  isNotFoundError,
+  isUnauthorizedError,
+  isInternalServerError,
+  Static,
+  TSchema,
+  convertQueryParamKeysToKabobCase,
+  BadRequestError,
+  NotFoundError,
+  UnauthorizedError,
+  InternalServerError,
+} from "../common";
 
 const log = debug("axiom:request");
 
@@ -62,11 +74,11 @@ export async function request<TRequestBody, TResponseBody = TRequestBody>(
     return { ...acc, [key]: val };
   }, {});
   const queryString = stringify(cleanedQuery);
-  const uri = `${url}${!!queryString ? `?${queryString}` : ""}`;
+  const uri = `${url}${queryString ? `?${queryString}` : ""}`;
 
   const requestHeaders = {
     "Content-Type": "application/json",
-    ...(!!token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...headers,
   };
 
@@ -80,8 +92,18 @@ export async function request<TRequestBody, TResponseBody = TRequestBody>(
   });
 
   if (!resp.ok) {
-    const { message } = await resp.json();
-    throw new Error(message);
+    const error = await resp.json();
+    if (isBadRequestError(error)) {
+      throw new BadRequestError(error.message, error.fields);
+    } else if (isNotFoundError(error)) {
+      throw new NotFoundError(error.message);
+    } else if (isUnauthorizedError(error)) {
+      throw new UnauthorizedError(error.message);
+    } else if (isInternalServerError(error)) {
+      throw new InternalServerError(error.message);
+    } else {
+      throw new InternalServerError("An unknown error occurred");
+    }
   }
 
   log(`${method} ${uri} - ${resp.status} ${resp.statusText}`, resp.text);
@@ -135,7 +157,7 @@ export function createSearchRequestFn<T extends TSchema>({
       headers: {
         "X-Pagination-Offset": offset.toString(),
         "X-Pagination-Limit": limit.toString(),
-        ...(!!orderBy ? { "X-Pagination-OrderBy": orderBy } : {}),
+        ...(orderBy ? { "X-Pagination-OrderBy": orderBy } : {}),
         ...headers,
       },
       ...options,
@@ -164,10 +186,11 @@ export function createGetRequestFn<T extends TSchema>({
   token,
   ...options
 }: RequestCreatorOptions) {
-  return async function get(id: string | number) {
+  return async function get(id: string | number, query: QueryParameters = {}) {
     const [resp] = await request<Static<T>>(`${resourcePath}/${id}`, {
       method: "get",
       token: token.current,
+      query: convertQueryParamKeysToKabobCase(query),
       ...options,
     });
     return resp;

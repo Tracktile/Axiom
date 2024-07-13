@@ -1,15 +1,15 @@
 import "reflect-metadata";
-import kebabCase from "kebab-case";
-import { debug } from "debug";
-import { TSchema, TypeGuard } from "@sinclair/typebox";
 import convert from "@openapi-contrib/json-schema-to-openapi-schema";
+import { TSchema, TypeGuard } from "@sinclair/typebox";
+import { debug } from "debug";
+import kebabCase from "kebab-case";
 import * as oa from "openapi3-ts";
-
-import { OperationDefinition } from "../server/types";
-import { Service } from "../server/service";
-import { CombinedService, isCombinedService } from "../server/combined-service";
-import { withDatesAsDateTimeStrings } from "../common/utils";
 import { Controller } from "server";
+
+import { withDatesAsDateTimeStrings } from "../common/utils";
+import { CombinedService, isCombinedService } from "../server/combined-service";
+import { Service } from "../server/service";
+import { OperationDefinition } from "../server/types";
 
 const log = debug("axiom:cli:generate");
 
@@ -45,7 +45,7 @@ const formatPath = (path: string) => {
 
 const kebab = (str: string) => {
   const noSpaces = str.replace(/\s/g, "");
-  return kebabCase(noSpaces).substring(1).toLocaleLowerCase();
+  return kebabCase(noSpaces).substring(1)?.toLocaleLowerCase() ?? "";
 };
 
 interface GenerateOptions {
@@ -264,13 +264,13 @@ export async function generate<TContext = Record<string, never>>(
 
     for (const op of operations) {
       log(`Generating operation ${op.name} ${op.method} ${op.path}`);
-      if (!TypeGuard.TObject(op.params)) {
+      if (!TypeGuard.IsObject(op.params)) {
         throw new Error(
           `Invalid parameters provided to route, must be T.Object. ${op.name} ${op.method} ${op.path}`
         );
       }
 
-      if (!TypeGuard.TObject(op.query)) {
+      if (!TypeGuard.IsObject(op.query)) {
         throw new Error(
           `Invalid query provided to route, must be T.Object. ${op.name} ${op.method} ${op.path}`
         );
@@ -284,7 +284,7 @@ export async function generate<TContext = Record<string, never>>(
         [op.method]: {
           operationId: kebab(op.name),
           summary: op.summary ?? "No Summary",
-          description: !!op.description ? op.description : "No description",
+          description: op.description ? op.description : "No description",
           tags: op.tags,
           ...(["post", "put"].includes(op.method)
             ? {

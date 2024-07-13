@@ -1,10 +1,9 @@
 import { QueryClient } from "@tanstack/react-query";
 import { MutableRefObject } from "react";
 
-import { TSchema, Model, Procedure } from "../common";
-
 import { ReactModel } from "./model";
 import { ReactProcedure } from "./procedure";
+import { TSchema, Model, Procedure } from "../common";
 
 export type SearchQueryField = {
   name: string;
@@ -49,13 +48,13 @@ export type ReactModelMap<
 };
 
 export type ProcedureMap<
-  P extends Record<string, Procedure<TSchema, TSchema>>,
+  P extends Record<string, Procedure<TSchema, TSchema, TSchema>>,
 > = {
   [K in keyof P]: P[K];
 };
 
 export type ReactProcedureMap<
-  P extends Record<string, Procedure<TSchema, TSchema>>,
+  P extends Record<string, Procedure<TSchema, TSchema, TSchema>>,
 > = {
   [K in keyof P]: ReactProcedure<P[K]>;
 };
@@ -65,7 +64,7 @@ interface CreateApiOptions<
     string,
     Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema, any>
   >,
-  P extends Record<string, Procedure<TSchema, TSchema>>,
+  P extends Record<string, Procedure<TSchema, TSchema, TSchema>>,
 > {
   client: QueryClient;
   baseUrl: string;
@@ -79,7 +78,7 @@ export function createApi<
     string,
     Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema, any>
   >,
-  P extends Record<string, Procedure<TSchema, TSchema>>,
+  P extends Record<string, Procedure<TSchema, TSchema, TSchema>>,
 >({
   models,
   fns,
@@ -98,7 +97,7 @@ export function createApi<
           M[keyof M]["schemas"]["update"],
           M[keyof M]["transformer"]
         >({
-          baseUrl: baseUrl,
+          baseUrl,
           model: models[key as keyof M],
         }).bind({
           client,

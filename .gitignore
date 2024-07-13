@@ -1,6 +1,5 @@
 node_modules/
 coverage/
-cli/
 *.d.ts
 *.d.mts
 *.d.ts.map

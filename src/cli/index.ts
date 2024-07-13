@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
-import fs from "fs";
-import path from "path";
-import { parse } from "ts-command-line-args";
-import loadConfig from "load-config-file";
 import { Type as T, Static } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
+import fs from "fs";
+import loadConfig from "load-config-file";
+import path from "path";
+import { parse } from "ts-command-line-args";
 
 import { generate } from "./generate";
 
@@ -25,21 +25,19 @@ const AxiomCliConfig = T.Object({
     )
   ),
 });
+// eslint-disable-next-line @typescript-eslint/no-redeclare
 type AxiomCliConfig = Static<typeof AxiomCliConfig>;
 
 const AxiomCliArgs = T.Object({
   config: T.Optional(T.String()),
   help: T.Optional(T.Boolean()),
 });
+// eslint-disable-next-line @typescript-eslint/no-redeclare
 type AxiomCliArgs = Static<typeof AxiomCliArgs>;
 
 const fatal = (message: string) => {
   console.error(`[X] ${message}`);
   process.exit(1);
-};
-
-const warn = (message: string) => {
-  console.warn(`[!] ${message}`);
 };
 
 const info = (...args: any[]) => {
@@ -110,9 +108,12 @@ function getConfig(configPath?: string) {
     info("Using config:", resolvedPath);
     return config;
   } catch (err) {
-    return fatal(
-      `Unable to resolve configuration: ${configPath ?? "axiom.config"}`
-    );
+    if (err instanceof Error) {
+      return fatal(
+        `Unable to resolve configuration: ${configPath ?? "axiom.config"}: ${err.message}`
+      );
+    }
+    return fatal("Unable to resolve configuration.");
   }
 }
 

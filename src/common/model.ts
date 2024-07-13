@@ -7,7 +7,7 @@ export type ModelOptions<
   TDelete extends TSchema,
   TQuery extends TSchema,
   TPath extends TSchema,
-  TTransformer extends (serialized: Static<TModel>) => any,
+  TTransform extends (serialized: Static<TModel>) => any,
 > = {
   name: string;
   resource: string;
@@ -18,7 +18,7 @@ export type ModelOptions<
   del?: TDelete;
   query?: TQuery;
   path?: TPath;
-  transformer: TTransformer;
+  transformer: TTransform;
 };
 
 export class Model<
@@ -28,7 +28,7 @@ export class Model<
   TDelete extends TSchema = TObject,
   TQuery extends TSchema = TObject,
   TPath extends TSchema = TObject,
-  TTransformer extends (serialized: Static<TModel>) => any = (
+  TTransform extends (serialized: Static<TModel>) => any = (
     m: Static<TModel>
   ) => typeof m,
 > {
@@ -43,7 +43,7 @@ export class Model<
     query: TQuery;
     path: TPath;
   };
-  transformer: TTransformer;
+  transformer: TTransform;
 
   constructor(
     options: ModelOptions<
@@ -53,7 +53,7 @@ export class Model<
       TDelete,
       TQuery,
       TPath,
-      TTransformer
+      TTransform
     >
   ) {
     this.name = options.name;

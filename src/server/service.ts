@@ -1,15 +1,20 @@
-import Koa, { DefaultState, Middleware } from "koa";
 import { Options as CorsOptions } from "@koa/cors";
-import BodyParser from "koa-bodyparser";
 import Router from "@koa/router";
+import Koa, { DefaultState, Middleware } from "koa";
+import BodyParser from "koa-bodyparser";
 import KoaQs from "koa-qs";
 
 import { Controller } from "./controller";
-import { convertQueryParamKeysFromKabobCase } from "../common";
-import { isBadRequestError, isHTTPError } from "./errors";
-
-import Debug from "debug";
-const log = Debug("axiom:server");
+import {
+  convertQueryParamKeysFromKabobCase,
+  isBadRequestError,
+  isAPIError,
+  isUnauthorizedError,
+  isNotFoundError,
+  isInternalServerError,
+  ErrorType,
+  isForbiddenError,
+} from "../common";
 
 export type Contact = {
   name: string;
@@ -83,7 +88,7 @@ export class Service<TExtend = Record<string, unknown>> extends Koa<
   middleware: Middleware<DefaultState, unknown>[];
   router: Router<DefaultState, TExtend>;
   config: ServiceConfiguration;
-  onError: (error: Error) => void;
+  onError?: (error: Error) => void;
 
   constructor({
     title = "",
@@ -98,7 +103,7 @@ export class Service<TExtend = Record<string, unknown>> extends Koa<
     controllers = [],
     middlewares = [],
     config = DEFAULT_SERVICE_CONFIGURATION,
-    onError = console.error,
+    onError,
   }: ServiceOptions<TExtend>) {
     super();
     this.router = new Router<DefaultState, TExtend>();
@@ -132,20 +137,64 @@ export class Service<TExtend = Record<string, unknown>> extends Koa<
         await next();
       } catch (err) {
         if (err instanceof Error) {
-          if (isHTTPError(err)) {
+          console.error("ERROR", err);
+          this.onError?.(err);
+          if (isAPIError(err) && isBadRequestError(err)) {
             ctx.body = {
+              type: ErrorType.BadRequest,
               message: err.message,
-              errors: isBadRequestError(err) ? err.fields : err.errors,
+              status: 400,
+              fields: err.fields,
             };
-            ctx.status = err.status;
-          } else {
+            ctx.status = 400;
+          }
+          if (isAPIError(err) && isUnauthorizedError(err)) {
             ctx.body = {
+              type: ErrorType.Unauthorized,
               message: err.message,
+              status: 401,
+            };
+            ctx.status = 401;
+          }
+          if (isAPIError(err) && isForbiddenError(err)) {
+            ctx.body = {
+              type: ErrorType.Forbidden,
+              message: err.message,
+              status: 403,
+            };
+            ctx.status = 403;
+          }
+          if (isAPIError(err) && isNotFoundError(err)) {
+            ctx.body = {
+              type: ErrorType.NotFound,
+              message: err.message,
+              status: 404,
+            };
+            ctx.status = 404;
+          }
+          if (isAPIError(err) && isInternalServerError(err)) {
+            ctx.body = {
+              type: ErrorType.InternalServerError,
+              message: err.message,
+              status: 500,
             };
             ctx.status = 500;
           }
-          log("error", err);
-          this.onError(err);
+          if (!isAPIError(err)) {
+            ctx.body = {
+              type: ErrorType.InternalServerError,
+              message: "An internal server error occurred.",
+              status: 500,
+            };
+            ctx.status = 500;
+          }
+        } else {
+          ctx.body = {
+            type: ErrorType.InternalServerError,
+            message: "An internal server error occurred.",
+            status: 500,
+          };
+          ctx.status = 500;
         }
       }
     });

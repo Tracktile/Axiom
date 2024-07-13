@@ -1,24 +1,14 @@
-import { createRef, MutableRefObject } from "react";
 import {
   QueryClient,
   useQuery,
   useMutation,
   UseMutationOptions,
   UseQueryOptions,
+  keepPreviousData,
 } from "@tanstack/react-query";
+import { createRef, MutableRefObject, useMemo } from "react";
 
-import {
-  Static,
-  TSchema,
-  Model,
-  noAdditionalProperties,
-  noEmptyStringValues,
-  undefinedToNull,
-  noAdditionalPropertiesInSchema,
-  Value,
-  withNoStringFormats,
-} from "../common";
-
+import { SearchQuery } from "./api";
 import {
   buildResourcePath,
   createCreateRequestFn,
@@ -27,8 +17,29 @@ import {
   createSearchRequestFn,
   createUpdateRequestFn,
 } from "./request";
+import {
+  APIError,
+  Static,
+  TSchema,
+  Model,
+  noAdditionalProperties,
+  noEmptyStringValues,
+  undefinedToNull,
+} from "../common";
 
-import { SearchQuery } from "./api";
+export type AnyQueryResult = ReturnType<
+  ReactModel<any, any, any, any, any>["query" | "get"]
+>;
+
+export type AnyMutationResult = ReturnType<
+  ReactModel<any, any, any, any, any>["update" | "create" | "remove"]
+>;
+
+type AxiomGetOptions = {
+  id?: string;
+  fields?: SearchQuery["fields"];
+  path?: Record<string, string | number>;
+};
 
 type AxiomQueryOptions = {
   offset?: number;
@@ -84,9 +95,9 @@ export class ReactModel<
   }
 
   modelKeys = {
-    search: (args: SearchQuery = {}) => [
+    search: (args: SearchQuery & { path?: Record<string, unknown> } = {}) => [
       this.model.name,
-      Object.fromEntries(Object.entries(args).filter(([, val]) => !!val)),
+      args,
     ],
     get: (id: any) => [this.model.name, id],
     create: () => [`create-${this.model.name}`],
@@ -95,22 +106,9 @@ export class ReactModel<
   };
 
   private preparePayloadForSubmission(schema: TSchema, payload: object) {
-    // Exclude all additional properties from cast
-    // Remove string formats so any format can be sent to the backend
-    // Backend is responsible for string format validation
-    let processedSchema = withNoStringFormats(
-      noAdditionalPropertiesInSchema(this.model.schemas.create)
-    );
-
-    // Map undefined to null
-    // Remove empty string values from objects
-    // Remove properties not in schema
     const pruned = undefinedToNull(
-      noEmptyStringValues(
-        noAdditionalProperties(this.model.schemas.create, payload)
-      )
+      noEmptyStringValues(noAdditionalProperties(schema, payload))
     );
-
     return pruned;
   }
 
@@ -130,7 +128,7 @@ export class ReactModel<
         })(pruned);
       },
       onMutate: async (
-        item: Static<TModel["schemas"]["model"]>
+        item: Static<TModel["schemas"]["create"]>
       ): Promise<TContext<Static<TModel["schemas"]["model"]>>> => {
         if (!this.client) {
           throw new Error("Client is not bound");
@@ -163,14 +161,14 @@ export class ReactModel<
         });
       },
       onError: (
-        err: Error,
+        err: APIError,
         item: Static<TModel["schemas"]["model"]>,
         context?: TContext<Static<TModel["schemas"]["model"]>>
       ) => {
         if (err) {
           console.log(err);
         }
-        if (!!context?.previous) {
+        if (context?.previous) {
           if (!this.client) {
             throw new Error("Client is not bound");
           }
@@ -195,7 +193,7 @@ export class ReactModel<
       throw new Error("Client is not bound");
     }
     this.client.setMutationDefaults(this.modelKeys.update(), {
-      mutationFn: (item: Static<TModel["schemas"]["model"]>) => {
+      mutationFn: (item: Static<TModel["schemas"]["update"]>) => {
         const id = item[this.model.idKey] as string | number;
         const pruned = this.preparePayloadForSubmission(
           this.model.schemas.update,
@@ -228,14 +226,14 @@ export class ReactModel<
         });
       },
       onError: (
-        err: Error,
+        err: APIError,
         item: Static<TModel["schemas"]["model"]>,
         context?: TContext<Static<TModel["schemas"]["model"]>>
       ) => {
         if (err) {
           console.log(err);
         }
-        if (!!context?.previous) {
+        if (context?.previous) {
           if (!this.client) {
             throw new Error("Client is not bound");
           }
@@ -287,7 +285,7 @@ export class ReactModel<
         });
       },
       onError: (
-        err: Error,
+        err: APIError,
         item: Static<TModel["schemas"]["model"]>,
         context?: TContext<Static<TModel["schemas"]["model"]>>
       ) => {
@@ -318,20 +316,23 @@ export class ReactModel<
   }
 
   get(
-    id: string | number = "",
+    { id = "", fields = [], path = {} }: AxiomGetOptions = {
+      id: "",
+      fields: [],
+      path: {},
+    },
     options?: Partial<
       UseQueryOptions<
         Static<TModel["schemas"]["model"]>,
-        Error,
+        APIError,
         ReturnType<TTransform>
-      > & {
-        path?: Record<string, string | number>;
-      }
+      >
     >
   ) {
-    return useQuery({
-      queryKey: [...this.modelKeys.get(id), options?.path],
-      enabled: !!id,
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const query = useQuery({
+      queryKey: [...this.modelKeys.get(id), path],
+      enabled: options?.enabled !== false,
       refetchInterval: false,
       refetchIntervalInBackground: false,
       refetchOnMount: true,
@@ -345,14 +346,18 @@ export class ReactModel<
           resourcePath: buildResourcePath(
             this.baseUrl,
             this.model.resource,
-            options?.path
+            path
           ),
           token: this.token,
-        })(id),
-      select: (data) => {
-        return this.transform(data);
-      },
+        })(id, parseSearchQuery(fields)),
+      select: (data) => this.transform(data),
     });
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const ret = useMemo(
+      () => ({ ...query, isUpdating: query.isLoading || query.isFetching }),
+      [query]
+    );
+    return ret;
   }
 
   query(
@@ -372,7 +377,7 @@ export class ReactModel<
           offset: number | undefined;
           limit: number;
         },
-        Error,
+        APIError,
         {
           results: ReturnType<TTransform>[];
           total: number;
@@ -382,13 +387,16 @@ export class ReactModel<
       >
     >
   ) {
+    const queryKey = this.modelKeys.search({
+      limit,
+      offset,
+      orderBy,
+      fields,
+      path,
+    });
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const query = useQuery({
-      queryKey: this.modelKeys.search({
-        limit,
-        offset,
-        orderBy,
-        fields,
-      }),
+      queryKey,
       queryFn: async () => {
         const searchQuery = parseSearchQuery(fields);
         const { results, total } = await createSearchRequestFn<
@@ -423,21 +431,32 @@ export class ReactModel<
       refetchOnReconnect: false,
       refetchOnWindowFocus: false,
       retry: false,
+      placeholderData: keepPreviousData,
       ...options,
-      select: (data) => {
-        return {
-          ...data,
+      // eslint-disable-next-line react-hooks/rules-of-hooks
+      select: (data: {
+        results: Static<TModel["schemas"]["model"]>[];
+        total: number;
+        offset?: number;
+        limit: number;
+      }) => {
+        return Object.assign(data, {
           results: data.results.map((d) => this.transform(d)),
-        };
+        });
       },
     });
-    return {
-      ...query,
-      data: query.data?.results ?? [],
-      total: query.data?.total ?? 0,
-      offset: query.data?.offset ?? 0,
-      limit: query.data?.limit ?? 99,
-    };
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const ret = useMemo(() => {
+      return {
+        ...query,
+        data: query.data?.results ?? [],
+        total: query.data?.total ?? 0,
+        offset: query.data?.offset ?? 0,
+        limit: query.data?.limit ?? 99,
+        isUpdating: query.isLoading || query.isFetching,
+      };
+    }, [query]);
+    return ret;
   }
 
   create(
@@ -446,9 +465,10 @@ export class ReactModel<
       TModel["schemas"]["create"]
     > = {}
   ) {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     return useMutation<
       Static<TModel["schemas"]["model"]>,
-      Error,
+      APIError,
       Static<TModel["schemas"]["create"]>
     >({
       mutationKey: this.modelKeys.create(),
@@ -462,9 +482,10 @@ export class ReactModel<
       TModel["schemas"]["update"]
     > = {}
   ) {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     return useMutation<
       Static<TModel["schemas"]["model"]>,
-      Error,
+      APIError,
       Static<TModel["schemas"]["update"]>
     >({
       mutationKey: this.modelKeys.update(),
@@ -478,9 +499,10 @@ export class ReactModel<
       TModel["schemas"]["model"]
     > = {}
   ) {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     return useMutation<
       Static<TModel["schemas"]["model"]>,
-      Error,
+      APIError,
       Static<TModel["schemas"]["model"]>
     >({
       mutationKey: this.modelKeys.remove(),

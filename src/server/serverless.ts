@@ -1,11 +1,11 @@
-import { RequestListener } from "http";
-import type { Handler } from "aws-lambda";
 import Cors, { Options as CorsOptions } from "@koa/cors";
-import Koa, { Context, Next, DefaultState } from "koa";
-
 import serverlessExpress, {
   getCurrentInvoke,
 } from "@vendia/serverless-express";
+import type { Handler } from "aws-lambda";
+import { RequestListener } from "http";
+import Koa, { Context, Next, DefaultState } from "koa";
+
 import { Service } from "./service";
 
 interface ConfigureParams {
@@ -24,15 +24,11 @@ export const serverless = <TExtend = Record<string, never>>(
     wrapperApp.proxy = true;
     wrapperApp.use(Cors(corsOptions));
     wrapperApp.use(async (ctx: Context, next: Next) => {
-      try {
-        const { event } = getCurrentInvoke();
-        ctx.path = event.requestContext.path;
-        ctx.url = event.requestContext.path;
-        ctx.query = event.queryStringParameters;
-        await next();
-      } catch (err) {
-        throw err;
-      }
+      const { event } = getCurrentInvoke();
+      ctx.path = event.requestContext.path;
+      ctx.url = event.requestContext.path;
+      ctx.query = event.queryStringParameters;
+      await next();
     });
 
     app.use(Cors(corsOptions));

@@ -1,6 +1,6 @@
-import { T } from "../common";
-import { testController } from "./test/test-controller";
 import { Controller } from "./controller";
+import { testController } from "./test/test-controller";
+import { T } from "../common";
 
 const controller = new Controller();
 controller.addOperation(
