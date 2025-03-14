@@ -17,7 +17,7 @@ interface ControllerOptions {
 }
 
 type AnyObject = Record<string, unknown>;
-type AnyObjectOrArray = object | unknown[];
+type AnyObjectOrArray = object | object[];
 
 type RouteHandler<
   TParams extends TSchema,
@@ -34,8 +34,8 @@ type RouteHandler<
 ) => Promise<void>;
 
 function serializer(
-  obj: object | null | unknown[]
-): AnyObjectOrArray | unknown {
+  obj: object | object[] | null | undefined
+): AnyObjectOrArray | string | undefined {
   if (obj === null) {
     return undefined;
   }

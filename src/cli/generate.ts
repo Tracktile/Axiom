@@ -4,8 +4,8 @@ import { TSchema, TypeGuard } from "@sinclair/typebox";
 import { debug } from "debug";
 import kebabCase from "kebab-case";
 import * as oa from "openapi3-ts";
-import { Controller } from "server";
 
+import { Controller } from "../server";
 import { withDatesAsDateTimeStrings } from "../common/utils";
 import { CombinedService, isCombinedService } from "../server/combined-service";
 import { Service } from "../server/service";
@@ -252,10 +252,15 @@ export async function generate<TContext = Record<string, never>>(
       pathObj.parameters = Object.keys(first.params.properties).map((key) => ({
         name: key,
         in: "path",
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         required: first.params.required.includes(key),
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         schema: { type: "string", format: first.params.properties[key].format },
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         description: first.params.properties[key].description,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         example: first.params.properties[key].example,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         examples: first.params.properties[key].examples,
       }));
     }
@@ -303,9 +308,11 @@ export async function generate<TContext = Record<string, never>>(
             name: prop,
             schema: {
               type: "string",
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
               format: op.query.properties[prop].format,
             },
             in: "query",
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             description: op.query.properties[prop].description,
           })),
           security: op.auth ? [{ JWT: [] }] : [],

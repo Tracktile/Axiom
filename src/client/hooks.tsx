@@ -1,13 +1,18 @@
-import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React, {
   createContext,
   PropsWithChildren,
-  useRef,
   useContext,
+  useRef,
 } from "react";
 
-import { createApi, ReactModelMap, ReactProcedureMap } from "./api";
-import { TSchema, Model, Procedure } from "../common";
+import { Model, Procedure, Resource, TSchema } from "../common";
+import {
+  createApi,
+  ReactModelMap,
+  ReactProcedureMap,
+  ReactResourceMap,
+} from "./api";
 
 const emptyModelMap: Record<
   string,
@@ -16,14 +21,17 @@ const emptyModelMap: Record<
 
 const emptyProcedureMap: Record<string, Procedure<any, any, any>> = {};
 
+const emptyResourceMap: Record<string, Resource<any, any>> = {};
+
 type ApiContextData<
   M extends Record<
     string,
     Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema, any>
   >,
   P extends Record<string, Procedure<TSchema, TSchema, TSchema>>,
+  R extends Record<string, Resource<TSchema, TSchema>>,
 > = {
-  api: ReactModelMap<M> & ReactProcedureMap<P>;
+  api: ReactModelMap<M> & ReactProcedureMap<P> & ReactResourceMap<R>;
 };
 
 const ApiContext = createContext<ApiContextData<
@@ -31,7 +39,8 @@ const ApiContext = createContext<ApiContextData<
     string,
     Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema, any>
   >,
-  Record<string, Procedure<TSchema, TSchema, TSchema>>
+  Record<string, Procedure<TSchema, TSchema, TSchema>>,
+  Record<string, Resource<TSchema, TSchema>>
 > | null>(null);
 
 type ApiProviderProps<
@@ -40,9 +49,11 @@ type ApiProviderProps<
     Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema, any>
   >,
   P extends Record<string, Procedure<TSchema, TSchema, TSchema>>,
+  R extends Record<string, Resource<TSchema, TSchema>>,
 > = {
   models?: M;
   fns?: P;
+  resources?: R;
   baseUrl: string;
   client?: QueryClient;
   token?: string;
@@ -54,20 +65,23 @@ function ApiProvider<
     Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema, any>
   >,
   P extends Record<string, Procedure<TSchema, TSchema, TSchema>>,
+  R extends Record<string, Resource<TSchema, TSchema>>,
 >({
   client = new QueryClient(),
   baseUrl,
   models = {} as M,
   fns = {} as P,
+  resources = {} as R,
   children,
   token,
-}: PropsWithChildren<ApiProviderProps<M, P>>) {
+}: PropsWithChildren<ApiProviderProps<M, P, R>>) {
   const tokenRef = useRef<string | null>(token ?? null);
   tokenRef.current = token ?? null;
   const api = createApi({
     client,
     models,
     fns,
+    resources,
     baseUrl,
     token: tokenRef,
   });
@@ -82,11 +96,22 @@ function ApiProvider<
 export function createApiProvider<
   M extends Record<string, Model<any, any, any, any, any, any, any>>,
   P extends Record<string, Procedure<any, any, any>>,
->({ models = {} as M, fns = {} as P }: { models?: M; fns?: P }) {
+  R extends Record<string, Resource<any, any>>,
+>({
+  models = {} as M,
+  fns = {} as P,
+  resources = {} as R,
+}: {
+  models?: M;
+  fns?: P;
+  resources?: R;
+}) {
   return function ApiProviderHook(
-    props: PropsWithChildren<ApiProviderProps<M, P>>
+    props: PropsWithChildren<ApiProviderProps<M, P, R>>
   ) {
-    return <ApiProvider {...props} models={models} fns={fns} />;
+    return (
+      <ApiProvider {...props} models={models} fns={fns} resources={resources} />
+    );
   };
 }
 
@@ -99,12 +124,18 @@ function useApi<
     string,
     Procedure<TSchema, TSchema, TSchema>
   > = typeof emptyProcedureMap,
+  R extends Record<
+    string,
+    Resource<TSchema, TSchema>
+  > = typeof emptyResourceMap,
 >() {
-  const context = useContext<ApiContextData<M, P> | null>(
-    ApiContext as unknown as React.Context<ApiContextData<M, P> | null>
+  const context = useContext<ApiContextData<M, P, R> | null>(
+    ApiContext as unknown as React.Context<ApiContextData<M, P, R> | null>
   );
   if (!context) {
-    throw new Error("useApiContext must be used under ApiContextProvider");
+    throw new Error(
+      "Axiom's useApi hook must be used within a child of ApiProvider."
+    );
   }
 
   return context.api;
@@ -113,9 +144,10 @@ function useApi<
 export function createUseApiHook<
   M extends Record<string, Model<any, any, any, any, any, any, any>>,
   P extends Record<string, Procedure<any, any, any>>,
+  R extends Record<string, Resource<any, any>>,
   // eslint-disable-next-line no-empty-pattern
->({}: { models?: M; fns?: P }) {
+>({}: { models?: M; fns?: P; resources?: R }) {
   return function useApiHook() {
-    return useApi<M, P>();
+    return useApi<M, P, R>();
   };
 }

@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 
-import { Type as T, Static } from "@sinclair/typebox";
+import { Static, Type as T } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
 import fs from "fs";
 import loadConfig from "load-config-file";
 import path from "path";
 import { parse } from "ts-command-line-args";
 
+import { isService } from "../server/service";
 import { generate } from "./generate";
 
 loadConfig.register("json", (text) => JSON.parse(text));
@@ -36,11 +37,13 @@ const AxiomCliArgs = T.Object({
 type AxiomCliArgs = Static<typeof AxiomCliArgs>;
 
 const fatal = (message: string) => {
+  // eslint-disable-next-line no-console
   console.error(`[X] ${message}`);
   process.exit(1);
 };
 
 const info = (...args: any[]) => {
+  // eslint-disable-next-line no-console
   console.info("[*]", ...args);
 };
 
@@ -75,14 +78,13 @@ const processArgs = () => {
     return args;
   } catch (err) {
     if (err instanceof Error) {
-      console.error(err);
       return fatal(err.message);
     }
     return fatal("Error encountered while process arguments.");
   }
 };
 
-const recurseDefaultExports = (imported: any): any => {
+const recurseDefaultExports = (imported: { default?: unknown }): unknown => {
   if (imported.default) {
     return recurseDefaultExports(imported.default);
   }
@@ -97,15 +99,14 @@ async function loadEntry(entry: string) {
 
 function getConfig(configPath?: string) {
   try {
-    const loaded = loadConfig.loadSync(configPath ?? "axiom.config");
-    const resolvedPath = path.resolve(loaded.$cfgPath as string);
-    const config = Value.Cast(AxiomCliConfig, loaded);
+    // const loaded = loadConfig.loadSync(configPath ?? "axiom.config");
+    // const resolvedPath = path.resolve(loaded.$cfgPath as string);
+    const config = Value.Cast(AxiomCliConfig, {});
 
     // Rewrite entry and output to absolute paths based on the config file.
-    config.entry = path.resolve(path.dirname(resolvedPath), config.entry);
-    config.output = path.resolve(path.dirname(resolvedPath), config.output);
+    config.entry = path.resolve(config.entry);
+    config.output = path.resolve(config.output);
 
-    info("Using config:", resolvedPath);
     return config;
   } catch (err) {
     if (err instanceof Error) {
@@ -121,6 +122,11 @@ async function main() {
   const args = processArgs();
   const config = getConfig(args.config);
   const service = await loadEntry(config.entry);
+
+  if (!isService(service)) {
+    return fatal("Entry file does not export a valid service.");
+  }
+
   const content = await generate(service, config);
   fs.writeFileSync(path.resolve(config.output), content, { encoding: "utf8" });
   info("Specification written to:", path.resolve(config.output));

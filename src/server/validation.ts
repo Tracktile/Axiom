@@ -3,13 +3,8 @@ import { ValueError } from "@sinclair/typebox/compiler";
 import { Value } from "@sinclair/typebox/value";
 import { DefaultState, Middleware, Next } from "koa";
 
-import { OperationDefinition, OperationContext } from "./types";
-import {
-  BadRequestError,
-  TypeSystem,
-  noAdditionalProperties,
-  // trueFalseStringsToBoolean,
-} from "../common";
+import { BadRequestError, TypeSystem, noAdditionalProperties } from "../common";
+import { OperationContext, OperationDefinition } from "./types";
 
 type FormatValidator = (value: string) => boolean;
 
@@ -25,7 +20,7 @@ Object.entries(formats).forEach(([name, validatorFn]) => {
   try {
     TypeSystem.Format(name, (value) => validatorFn(value));
   } catch (err) {
-    console.log(err);
+    // NOOP
   }
 });
 

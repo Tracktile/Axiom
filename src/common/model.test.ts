@@ -1,5 +1,6 @@
-import { createModel } from "./model";
+import { describe, expect, it } from "vitest";
 import { T } from "../common";
+import { createModel } from "./model";
 
 describe("Model", () => {
   it("should be possible to define a model with only a name, resource, and model schema.", () => {

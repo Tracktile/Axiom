@@ -135,11 +135,7 @@ export function createUpdateMutation<T extends TSchema>(
         client.setQueryData(itemCacheKey(item[idKey]), context.previous);
         client.setQueryData<Static<T>[]>(itemIndexCacheKey(), (oldData = []) =>
           context.previous
-            ? replaceInWithBy(
-                oldData,
-                context.previous,
-                idKey as keyof Static<T>
-              )
+            ? replaceInWithBy(oldData, context.previous, idKey)
             : []
         );
       }
@@ -194,11 +190,7 @@ export function createDeleteMutation<T extends TSchema>(
         client.setQueryData(itemCacheKey(item[idKey]), context.previous);
         client.setQueryData<Static<T>[]>(itemIndexCacheKey(), (oldData = []) =>
           context.previous
-            ? replaceInWithBy(
-                oldData,
-                context.previous,
-                idKey as keyof Static<T>
-              )
+            ? replaceInWithBy(oldData, context.previous, idKey)
             : []
         );
       }

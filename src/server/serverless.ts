@@ -2,7 +2,7 @@ import Cors, { Options as CorsOptions } from "@koa/cors";
 import serverlessExpress, {
   getCurrentInvoke,
 } from "@vendia/serverless-express";
-import type { Handler } from "aws-lambda";
+import type { APIGatewayProxyEvent, Handler } from "aws-lambda";
 import { RequestListener } from "http";
 import Koa, { Context, Next, DefaultState } from "koa";
 
@@ -24,10 +24,10 @@ export const serverless = <TExtend = Record<string, never>>(
     wrapperApp.proxy = true;
     wrapperApp.use(Cors(corsOptions));
     wrapperApp.use(async (ctx: Context, next: Next) => {
-      const { event } = getCurrentInvoke();
+      const { event } = getCurrentInvoke() as { event: APIGatewayProxyEvent };
       ctx.path = event.requestContext.path;
       ctx.url = event.requestContext.path;
-      ctx.query = event.queryStringParameters;
+      ctx.query = event.queryStringParameters ?? {};
       await next();
     });
 

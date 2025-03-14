@@ -1,4 +1,4 @@
-import { T, TSchema, Static, TObject } from "../common";
+import { Static, T, TObject, TSchema } from "../common";
 
 export type ModelOptions<
   TModel extends TSchema,
@@ -8,6 +8,7 @@ export type ModelOptions<
   TQuery extends TSchema,
   TPath extends TSchema,
   TTransform extends (serialized: Static<TModel>) => any,
+  TSortable extends TSchema,
 > = {
   name: string;
   resource: string;
@@ -19,6 +20,14 @@ export type ModelOptions<
   query?: TQuery;
   path?: TPath;
   transformer: TTransform;
+  sortableBy?: TSortable;
+  _unstable_offlineModel?: boolean;
+  staleTime?: number;
+  gcTime?: number;
+  infiniteSearch?: {
+    enabled: boolean;
+    defaultLimit?: number;
+  };
 };
 
 export class Model<
@@ -31,6 +40,7 @@ export class Model<
   TTransform extends (serialized: Static<TModel>) => any = (
     m: Static<TModel>
   ) => typeof m,
+  TSortable extends TSchema = TModel,
 > {
   name: string;
   resource: string;
@@ -44,6 +54,14 @@ export class Model<
     path: TPath;
   };
   transformer: TTransform;
+  sortableBy: TSortable;
+  _unstable_offlineModel?: boolean;
+  staleTime?: number;
+  gcTime?: number;
+  infiniteSearch?: {
+    enabled: boolean;
+    defaultLimit: number;
+  };
 
   constructor(
     options: ModelOptions<
@@ -53,7 +71,8 @@ export class Model<
       TDelete,
       TQuery,
       TPath,
-      TTransform
+      TTransform,
+      TSortable
     >
   ) {
     this.name = options.name;
@@ -67,10 +86,69 @@ export class Model<
       path: options.path ?? (T.Object({}) as unknown as TPath),
       query: options.query ?? (T.Object({}) as unknown as TQuery),
     };
-
     this.transformer = options.transformer;
+    this.sortableBy =
+      options.sortableBy || (options.model as unknown as TSortable);
+    this._unstable_offlineModel = options._unstable_offlineModel ?? false;
+    this.staleTime = options.staleTime;
+    this.gcTime = options.gcTime;
+    this.infiniteSearch = options.infiniteSearch
+      ? {
+          enabled: options.infiniteSearch.enabled,
+          defaultLimit: options.infiniteSearch.defaultLimit ?? 50,
+        }
+      : undefined;
+  }
+
+  getSearchResponseType(): TSchema {
+    return T.Object({
+      results: T.Array(this.schemas.model),
+      nextCursor: T.Optional(T.String()),
+      total: T.Number(),
+      metadata: T.Object({
+        currentResults: T.Number(),
+        historicalResults: T.Number(),
+        timePeriodCovered: T.Tuple([T.String(), T.String()]),
+      }),
+    });
+  }
+
+  getSearchParamsType(): TSchema {
+    return T.Object({
+      cursor: T.Optional(T.String()),
+      limit: T.Optional(T.Number()),
+      search: T.Optional(T.String()),
+      filters: T.Optional(
+        T.Array(
+          T.Object({
+            field: T.String(),
+            operator: T.Union([
+              T.Literal("eq"),
+              T.Literal("contains"),
+              T.Literal("gt"),
+              T.Literal("lt"),
+              T.Literal("between"),
+            ]),
+            value: T.Union([
+              T.String(),
+              T.Number(),
+              T.Boolean(),
+              T.Array(T.Union([T.String(), T.Number()])),
+            ]),
+          })
+        )
+      ),
+      sort: T.Optional(
+        T.Object({
+          field: T.String(),
+          direction: T.Union([T.Literal("asc"), T.Literal("desc")]),
+        })
+      ),
+    });
   }
 }
+
+export const DEFAULT_CACHE_TIME = 300000;
 
 export function createModel<
   TModel extends TSchema,
@@ -80,26 +158,19 @@ export function createModel<
   TQuery extends TSchema,
   TPath extends TSchema,
   TTransformer extends (serialized: Static<TModel>) => any,
->({
-  name,
-  resource,
-  idKey,
-  model,
-  create,
-  update,
-  del,
-  query,
-  path,
-  transformer,
-}: ModelOptions<
-  TModel,
-  TCreate,
-  TUpdate,
-  TDelete,
-  TQuery,
-  TPath,
-  TTransformer
->) {
+  TSortable extends TSchema = TModel,
+>(
+  options: ModelOptions<
+    TModel,
+    TCreate,
+    TUpdate,
+    TDelete,
+    TQuery,
+    TPath,
+    TTransformer,
+    TSortable
+  >
+) {
   return new Model<
     TModel,
     TCreate,
@@ -107,17 +178,7 @@ export function createModel<
     TDelete,
     TQuery,
     TPath,
-    TTransformer
-  >({
-    name,
-    resource,
-    idKey,
-    model,
-    create,
-    update,
-    del,
-    query,
-    path,
-    transformer,
-  });
+    TTransformer,
+    TSortable
+  >(options);
 }

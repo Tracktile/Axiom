@@ -1,11 +1,8 @@
-export * from "@sinclair/typebox";
-export { Type as T } from "@sinclair/typebox";
-export { Value } from "@sinclair/typebox/value";
-export { TypeCompiler } from "@sinclair/typebox/compiler";
-export { TypeSystem } from "@sinclair/typebox/system";
-
+export * from "./typebox";
 export * from "./model";
 export * from "./procedure";
 export * from "./utils";
 export * from "./types";
 export * from "./errors";
+export * from "./search";
+export * from "./resource";

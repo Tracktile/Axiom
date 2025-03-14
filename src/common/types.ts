@@ -42,8 +42,13 @@ export type GetFieldType<T, P> = P extends `${infer Left}.${infer Right}`
         : undefined
       : undefined;
 
-export type NestedKeyOf<ObjectType extends object> = {
-  [Key in keyof ObjectType & (string | number)]: ObjectType[Key] extends object
-    ? `${Key}` | `${Key}.${NestedKeyOf<ObjectType[Key]>}`
-    : `${Key}`;
-}[keyof ObjectType & (string | number)];
+export type NestedKeyOf<T> = T extends object
+  ? {
+      [K in keyof T & (string | number)]: NonNullable<T[K]> extends object
+        ? // eslint-disable-next-line
+          NonNullable<T[K]> extends Function
+          ? `${K}`
+          : `${K}` | `${K}.${NestedKeyOf<NonNullable<T[K]>>}`
+        : `${K}`;
+    }[keyof T & (string | number)]
+  : never;

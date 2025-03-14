@@ -1,6 +1,8 @@
-import { generate } from "./generate";
+import { oas31 } from "openapi3-ts";
+import { describe, expect, it } from "vitest";
 import { T } from "../common";
-import { Service, Controller } from "../server";
+import { Controller, Service } from "../server";
+import { generate } from "./generate";
 
 describe("Generate", () => {
   it("should generate an openapi schema from a Service", async () => {
@@ -134,7 +136,9 @@ describe("Generate", () => {
       version: "1.0.0",
     });
 
-    const schema = JSON.parse(await generate(service, { format: "json" }));
+    const schema = JSON.parse(
+      await generate(service, { format: "json" })
+    ) as oas31.OpenAPIObject;
 
     expect(schema.paths).toEqual({});
     expect(schema.tags).toEqual([]);
@@ -169,7 +173,9 @@ describe("Generate", () => {
       internal: true,
     });
 
-    const schema = JSON.parse(await generate(service, { format: "json" }));
+    const schema = JSON.parse(
+      await generate(service, { format: "json" })
+    ) as oas31.OpenAPIObject;
 
     expect(schema.paths).toEqual({});
     expect(schema.tags).toEqual([]);
@@ -209,7 +215,7 @@ describe("Generate", () => {
         format: "json",
         sections: [{ title: "Test", tags: ["Test"] }],
       })
-    );
+    ) as oas31.OpenAPIObject;
 
     expect(schema["x-tagGroups"]).toHaveLength(1);
   });

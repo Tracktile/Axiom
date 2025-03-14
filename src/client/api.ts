@@ -1,27 +1,10 @@
 import { QueryClient } from "@tanstack/react-query";
 import { MutableRefObject } from "react";
 
+import { Model, Procedure, Resource, TSchema } from "../common";
 import { ReactModel } from "./model";
 import { ReactProcedure } from "./procedure";
-import { TSchema, Model, Procedure } from "../common";
-
-export type SearchQueryField = {
-  name: string;
-  comparator?: "and" | "or";
-  is?: string;
-  contains?: string;
-  isOneOf?: string[];
-  isLikeOneOf?: string[];
-  isGreaterThan?: string;
-  isLessThan?: string;
-};
-
-export type SearchQuery = {
-  fields?: SearchQueryField[];
-  offset?: number;
-  limit?: number;
-  orderBy?: string;
-};
+import { ReactResource } from "./resource";
 
 export type ModelMap<
   M extends Record<
@@ -35,7 +18,7 @@ export type ModelMap<
 export type ReactModelMap<
   M extends Record<
     string,
-    Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema, any>
+    Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema, any, TSchema>
   >,
 > = {
   [K in keyof M]: ReactModel<
@@ -43,7 +26,8 @@ export type ReactModelMap<
     M[K]["schemas"]["model"],
     M[K]["schemas"]["create"],
     M[K]["schemas"]["update"],
-    M[K]["transformer"]
+    M[K]["transformer"],
+    M[K]["sortableBy"]
   >;
 };
 
@@ -59,33 +43,50 @@ export type ReactProcedureMap<
   [K in keyof P]: ReactProcedure<P[K]>;
 };
 
+export type ResourceMap<P extends Record<string, Resource<TSchema, TSchema>>> =
+  {
+    [K in keyof P]: P[K];
+  };
+
+export type ReactResourceMap<
+  R extends Record<string, Resource<TSchema, TSchema>>,
+> = {
+  [K in keyof R]: ReactResource<R[K]>;
+};
+
 interface CreateApiOptions<
   M extends Record<
     string,
     Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema, any>
   >,
   P extends Record<string, Procedure<TSchema, TSchema, TSchema>>,
+  R extends Record<string, Resource<TSchema, TSchema>>,
 > {
   client: QueryClient;
   baseUrl: string;
   models: M;
   fns: P;
+  resources: R;
   token: MutableRefObject<string | null>;
 }
 
 export function createApi<
   M extends Record<
     string,
-    Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema, any>
+    Model<TSchema, TSchema, TSchema, TSchema, TSchema, TSchema, any, TSchema>
   >,
   P extends Record<string, Procedure<TSchema, TSchema, TSchema>>,
+  R extends Record<string, Resource<TSchema, TSchema>>,
 >({
   models,
   fns,
+  resources,
   client,
   baseUrl,
   token,
-}: CreateApiOptions<M, P>): ReactModelMap<M> & ReactProcedureMap<P> {
+}: CreateApiOptions<M, P, R>): ReactModelMap<M> &
+  ReactProcedureMap<P> &
+  ReactResourceMap<R> {
   return {
     ...Object.keys(models).reduce(
       (acc, key) => ({
@@ -95,10 +96,12 @@ export function createApi<
           M[keyof M]["schemas"]["model"],
           M[keyof M]["schemas"]["create"],
           M[keyof M]["schemas"]["update"],
-          M[keyof M]["transformer"]
+          M[keyof M]["transformer"],
+          M[keyof M]["sortableBy"]
         >({
           baseUrl,
           model: models[key as keyof M],
+          _unstable_offlineModel: models[key as keyof M]._unstable_offlineModel,
         }).bind({
           client,
           baseUrl,
@@ -119,6 +122,19 @@ export function createApi<
         }),
       }),
       {} as ReactProcedureMap<P>
+    ),
+    ...Object.keys(resources).reduce(
+      (acc, key) => ({
+        ...acc,
+        [key as keyof R]: new ReactResource<R[keyof R]>({
+          resource: resources[key as keyof R],
+        }).bind({
+          client,
+          baseUrl,
+          token,
+        }),
+      }),
+      {} as ReactResourceMap<R>
     ),
   };
 }

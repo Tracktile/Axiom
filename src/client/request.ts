@@ -2,20 +2,20 @@ import debug from "debug";
 import { stringify } from "qs";
 import { MutableRefObject } from "react";
 
-import { PaginationParams } from "./model";
 import {
+  BadRequestError,
+  convertQueryParamKeysToKabobCase,
+  InternalServerError,
   isBadRequestError,
+  isInternalServerError,
   isNotFoundError,
   isUnauthorizedError,
-  isInternalServerError,
+  NotFoundError,
   Static,
   TSchema,
-  convertQueryParamKeysToKabobCase,
-  BadRequestError,
-  NotFoundError,
   UnauthorizedError,
-  InternalServerError,
 } from "../common";
+import { PaginationParams } from "./model";
 
 const log = debug("axiom:request");
 
@@ -37,7 +37,7 @@ export function paramsForQuery<TParams extends Record<string, string | number>>(
   params: TParams = {} as TParams
 ) {
   return Object.fromEntries(
-    Object.entries(params).filter((key) => !url.includes(`:${key}`))
+    Object.entries(params).filter(([key]) => !url.includes(`:${key}`))
   );
 }
 
@@ -52,7 +52,10 @@ export function buildResourcePath<
     : resource;
   const url = `${cleanBaseUrl}/${cleanResource}`;
   const urlWithParams = Object.entries(params).reduce((acc, [key, val]) => {
-    return acc.replace(`:${key}`, val.toString());
+    if (typeof val !== "undefined" && typeof val !== "object") {
+      return acc.replace(`:${key}`, val.toString());
+    }
+    return acc;
   }, url);
   return urlWithParams;
 }
@@ -106,7 +109,7 @@ export async function request<TRequestBody, TResponseBody = TRequestBody>(
     }
   }
 
-  log(`${method} ${uri} - ${resp.status} ${resp.statusText}`, resp.text);
+  log(`${method} ${uri} - ${resp.status} ${resp.statusText}`);
 
   const responseHeaders: Record<string, string> = {};
   for (const pair of resp.headers.entries()) {
@@ -114,10 +117,12 @@ export async function request<TRequestBody, TResponseBody = TRequestBody>(
     responseHeaders[name.toLowerCase()] = value;
   }
 
-  const [offset, limit, total] = [
+  const [offset, limit, total, next, prev] = [
     responseHeaders["X-Pagination-Offset".toLowerCase()],
     responseHeaders["X-Pagination-Limit".toLowerCase()],
     responseHeaders["X-Pagination-Total".toLowerCase()],
+    responseHeaders["X-Pagination-Next".toLowerCase()],
+    responseHeaders["X-Pagination-Prev".toLowerCase()],
   ];
 
   const respBody = (await resp.json()) as TResponseBody;
@@ -128,6 +133,8 @@ export async function request<TRequestBody, TResponseBody = TRequestBody>(
       offset: parseInt(offset, 10),
       limit: parseInt(limit, 10),
       total: parseInt(total, 10),
+      next,
+      prev,
     },
   ];
 }
@@ -148,21 +155,32 @@ export function createSearchRequestFn<T extends TSchema>({
     offset = 0,
     limit = 999,
     orderBy,
+    knownCursors,
+    next: nextParam,
+    prev: prevParam,
     ...query
   }: PaginationParams & QueryParameters = {}) {
-    const [results, { total }] = await request<Static<T>[]>(resourcePath, {
-      method: "get",
-      query: convertQueryParamKeysToKabobCase(query),
-      token: token.current,
-      headers: {
-        "X-Pagination-Offset": offset.toString(),
-        "X-Pagination-Limit": limit.toString(),
-        ...(orderBy ? { "X-Pagination-OrderBy": orderBy } : {}),
-        ...headers,
-      },
-      ...options,
-    });
-    return { results, total, offset, limit, orderBy };
+    const [results, { total, next, prev }] = await request<Static<T>[]>(
+      resourcePath,
+      {
+        method: "get",
+        query: convertQueryParamKeysToKabobCase(query),
+        token: token.current,
+        headers: {
+          "X-Pagination-Offset": offset.toString(),
+          "X-Pagination-Limit": limit.toString(),
+          ...(knownCursors
+            ? { "X-Pagination-KnownCursors": knownCursors }
+            : {}),
+          ...(nextParam ? { "X-Pagination-Next": nextParam } : {}),
+          ...(prevParam ? { "X-Pagination-Prev": prevParam } : {}),
+          ...(orderBy ? { "X-Pagination-OrderBy": orderBy } : {}),
+          ...headers,
+        },
+        ...options,
+      }
+    );
+    return { results, total, offset, limit, orderBy, next, prev };
   };
 }
 

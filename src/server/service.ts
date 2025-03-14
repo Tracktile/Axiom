@@ -3,18 +3,20 @@ import Router from "@koa/router";
 import Koa, { DefaultState, Middleware } from "koa";
 import BodyParser from "koa-bodyparser";
 import KoaQs from "koa-qs";
+import sizeOf from "object-sizeof";
+import prettyBytes from "pretty-bytes";
 
-import { Controller } from "./controller";
 import {
   convertQueryParamKeysFromKabobCase,
-  isBadRequestError,
-  isAPIError,
-  isUnauthorizedError,
-  isNotFoundError,
-  isInternalServerError,
   ErrorType,
+  isAPIError,
+  isBadRequestError,
   isForbiddenError,
+  isInternalServerError,
+  isNotFoundError,
+  isUnauthorizedError,
 } from "../common";
+import { Controller } from "./controller";
 
 export type Contact = {
   name: string;
@@ -61,11 +63,18 @@ export const DEFAULT_SERVICE_CONFIGURATION: ServiceConfiguration = {
   cors: {},
 } as const;
 
-export function isService(service: any): service is Service {
+export function isService(service: unknown): service is Service {
+  if (typeof service !== "object" || service === null) {
+    return false;
+  }
   return (
+    "title" in service &&
     typeof service.title === "string" &&
+    "description" in service &&
     typeof service.description === "string" &&
+    "tags" in service &&
     Array.isArray(service.tags) &&
+    "prefix" in service &&
     typeof service.prefix === "string"
   );
 }
@@ -133,11 +142,33 @@ export class Service<TExtend = Record<string, unknown>> extends Koa<
     serviceRouter.use(BodyParser());
 
     serviceRouter.use(async (ctx, next) => {
+      await next();
+      const resBodySize = sizeOf(ctx.body);
+
+      // If the response body size is approaching the lambda limit (6MB), log an error to the handler. (Sentry)
+      if (resBodySize > 5 * 1024 * 1024) {
+        this.onError?.(
+          new Error(
+            `Response body size (${prettyBytes(resBodySize)}) is approaching the lambda limit (6MB)`
+          )
+        );
+      }
+
+      // If response body size is greated than the lambda limit (6MB), log an error to the handler. (Sentry)
+      if (resBodySize > 6 * 1024 * 1024) {
+        this.onError?.(
+          new Error(
+            `Response body size (${prettyBytes(resBodySize)}) is greater than the lambda limit (6MB)`
+          )
+        );
+      }
+    });
+
+    serviceRouter.use(async (ctx, next) => {
       try {
         await next();
       } catch (err) {
         if (err instanceof Error) {
-          console.error("ERROR", err);
           this.onError?.(err);
           if (isAPIError(err) && isBadRequestError(err)) {
             ctx.body = {
@@ -206,12 +237,7 @@ export class Service<TExtend = Record<string, unknown>> extends Koa<
         ctx.request.body &&
         typeof ctx.request.body === "object"
       ) {
-        ctx.request.body = Object.fromEntries(
-          Object.entries(ctx.request.body).map(([key, value]) => [
-            key,
-            value === null ? undefined : value,
-          ])
-        );
+        ctx.request.body = transformNullsToUndefined(ctx.request.body);
       }
       return next();
     });
@@ -248,10 +274,27 @@ export class Service<TExtend = Record<string, unknown>> extends Koa<
   }
 
   start(port = 8080, addresses: string[] = ["127.0.0.1"]) {
-    KoaQs(this, "extended");
+    KoaQs(this as Koa, "extended");
     this.init();
     for (const address of addresses) {
       this.listen(port, address);
     }
   }
 }
+
+const transformNullsToUndefined = (body: object): unknown => {
+  if (Array.isArray(body)) {
+    return body.map(transformNullsToUndefined);
+  }
+  if (typeof body === "object" && body !== null) {
+    return Object.fromEntries(
+      Object.entries(body).map(([key, value]) => {
+        if (typeof value === "object" && value !== null) {
+          value = transformNullsToUndefined(value);
+        }
+        return [key, value === null ? undefined : value];
+      })
+    );
+  }
+  return body === null ? undefined : body;
+};

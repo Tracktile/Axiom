@@ -1,11 +1,11 @@
 import {
-  Service,
-  ServiceOptions,
-  ServiceConfiguration,
-  DEFAULT_SERVICE_CONFIGURATION,
   Contact,
+  DEFAULT_SERVICE_CONFIGURATION,
   License,
   Server,
+  Service,
+  ServiceConfiguration,
+  ServiceOptions,
 } from "./service";
 
 export interface CombinedServiceConfiguration extends ServiceConfiguration {
@@ -17,6 +17,7 @@ export interface CombinedServiceConfiguration extends ServiceConfiguration {
   contact?: Contact;
   license?: License;
   servers?: Server[];
+  onError?: (err: Error) => void;
 }
 
 export interface CombinedServiceOptions<TExtend = Record<string, never>>
@@ -88,6 +89,7 @@ export function combineServices<TExtend = Record<string, never>>(
     tags: combinedConfig.tags,
     children: services,
     license: combinedConfig.license,
+    onError: combinedConfig.onError,
   });
 
   for (const service of services) {

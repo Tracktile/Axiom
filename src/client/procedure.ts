@@ -3,9 +3,9 @@ import {
   UseMutationOptions,
   useMutation,
 } from "@tanstack/react-query";
-import { Procedure } from "common/procedure";
 import { MutableRefObject, createRef } from "react";
 
+import { Procedure } from "../common/procedure";
 import { buildResourcePath, paramsForQuery, request } from "./request";
 import { Static, TSchema, convertQueryParamKeysToKabobCase } from "../common";
 
@@ -24,7 +24,7 @@ interface ProcedureBindOptions {
 }
 
 export class ReactProcedure<TProcedure extends Procedure<any, any, any>> {
-  baseUrl: string = "";
+  baseUrl: string;
   token: MutableRefObject<string | null>;
   client?: QueryClient;
   procedure: Procedure<
@@ -42,6 +42,7 @@ export class ReactProcedure<TProcedure extends Procedure<any, any, any>> {
   ) {
     this.procedure = options.procedure;
     this.token = createRef<string | null>();
+    this.baseUrl = "";
   }
 
   bind({ client, baseUrl, token }: ProcedureBindOptions) {
@@ -71,11 +72,12 @@ export class ReactProcedure<TProcedure extends Procedure<any, any, any>> {
         );
         const paramsForQueryString = paramsForQuery(
           this.procedure.resource,
-          params
+          this.procedure.method.toLowerCase() === "get" ? params : {}
         );
         const [resp] = await request<Static<TProcedure["result"]>>(url, {
           method: this.procedure.method,
-          body: params,
+          body:
+            this.procedure.method.toLowerCase() === "get" ? undefined : params,
           token: this.token.current,
           query: convertQueryParamKeysToKabobCase(paramsForQueryString),
         });

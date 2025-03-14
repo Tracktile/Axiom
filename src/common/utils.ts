@@ -1,6 +1,4 @@
-import { Type, Static, TSchema, TypeGuard, TObject } from "@sinclair/typebox";
-import { Value } from "@sinclair/typebox/value";
-
+import { Value, Type, Static, TSchema, TypeGuard, TObject } from "./typebox";
 import { GetFieldType } from "./types";
 
 export function convertQueryParamKeysToKabobCase<T extends object>(obj: T) {
@@ -28,6 +26,7 @@ export function getValue<
     .split(/[.[\]]/)
     .filter(Boolean)
     .reduce<GetFieldType<TData, TPath>>(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       (value, key) => (value as any)?.[key],
       data as any
     );
