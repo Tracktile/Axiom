@@ -50,7 +50,7 @@
     "@vendia/serverless-express": "^4.10.4",
     "debug": "^4.3.4",
     "expo": "51.0.31",
-    "hono": "4.5.1",
+    "hono": "4.13.16",
     "kebab-case": "^1.0.2",
     "koa": "^2.14.2",
     "koa-bodyparser": "^4.4.1",
